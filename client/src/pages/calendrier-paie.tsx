@@ -22,6 +22,36 @@ const joursFeries2025: JoursFeries = {
   '2025-12-25': 'Noël'
 };
 
+type TypeEcheance = 'dsn' | 'taxe' | 'formation';
+
+type Echeance = {
+  date: number;
+  description: string;
+  type: TypeEcheance;
+  importance: 'high' | 'normal';
+};
+
+const echeancesAnnuelles2025 = [
+  {
+    date: new Date(2025, 2, 1), // 1er Mars 2025
+    description: 'Solde de la taxe d\'apprentissage',
+    type: 'taxe',
+    importance: 'high'
+  },
+  {
+    date: new Date(2025, 4, 31), // 31 Mai 2025
+    description: 'Versement contribution conventionnelle',
+    type: 'formation',
+    importance: 'high'
+  },
+  {
+    date: new Date(2025, 5, 1), // 1er Juin 2025
+    description: 'Formation professionnelle et CPF',
+    type: 'formation',
+    importance: 'high'
+  }
+];
+
 const CalendrierPaie = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('year');
@@ -71,28 +101,39 @@ const CalendrierPaie = () => {
     return { workDays, workableDays };
   };
 
-  type Echeance = {
-    date: number;
-    description: string;
-    importance: 'high' | 'normal';
-  };
-
   const getEcheancesPaie = (year: number, month: number): Echeance[] => {
     const dsn50Plus = calculateDSNDate(year, month, 5);
     const dsnMoins50 = calculateDSNDate(year, month, 15);
 
-    return [
+    // Commencer avec les échéances DSN mensuelles
+    const echeances: Echeance[] = [
       { 
         date: dsn50Plus.getDate(), 
         description: 'DSN entreprises +50 salariés',
+        type: 'dsn',
         importance: 'high'
       },
       { 
         date: dsnMoins50.getDate(), 
         description: 'DSN entreprises -50 salariés',
+        type: 'dsn',
         importance: 'high'
       }
     ];
+
+    // Ajouter les échéances annuelles pour ce mois
+    echeancesAnnuelles2025
+      .filter(ea => ea.date.getMonth() === month && ea.date.getFullYear() === year)
+      .forEach(ea => {
+        echeances.push({
+          date: ea.date.getDate(),
+          description: ea.description,
+          type: ea.type,
+          importance: ea.importance
+        });
+      });
+
+    return echeances;
   };
 
   const renderAnnualView = () => {
@@ -113,6 +154,8 @@ const CalendrierPaie = () => {
 
       const dsn50Plus = calculateDSNDate(date.getFullYear(), i, 5);
       const dsnMoins50 = calculateDSNDate(date.getFullYear(), i, 15);
+
+      const echeancesDuMois = getEcheancesPaie(selectedDate.getFullYear(), i);
 
       return (
         <motion.div
@@ -166,13 +209,19 @@ const CalendrierPaie = () => {
                 )}
 
                 <div className="space-y-1">
-                  <div className="font-medium text-[#42D80F]">Échéances DSN :</div>
-                  <div className="text-gray-500 text-sm">
-                    +50 salariés : {dsn50Plus.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' })}
-                  </div>
-                  <div className="text-gray-500 text-sm">
-                    -50 salariés : {dsnMoins50.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' })}
-                  </div>
+                  <div className="font-medium text-[#42D80F]">Échéances :</div>
+                  {echeancesDuMois.map((ea, idx) => (
+                    <div 
+                      key={idx}
+                      className={cn(
+                        "text-gray-500 text-sm px-2 py-1 rounded-md",
+                        ea.type === 'taxe' && "bg-purple-50 text-purple-700",
+                        ea.type === 'formation' && "bg-blue-50 text-blue-700"
+                      )}
+                    >
+                      {ea.date} - {ea.description}
+                    </div>
+                  ))}
                 </div>
               </div>
             </CardContent>
@@ -242,7 +291,12 @@ const CalendrierPaie = () => {
             {echeancesDuJour.map((echeance, idx) => (
               <div 
                 key={idx}
-                className="text-xs p-1.5 rounded mt-1 bg-[#42D80F]/10 text-[#42D80F] font-medium font-figtree"
+                className={cn(
+                  "text-xs p-1.5 rounded mt-1 font-medium font-figtree",
+                  echeance.type === 'dsn' && "bg-[#42D80F]/10 text-[#42D80F]",
+                  echeance.type === 'taxe' && "bg-purple-100 text-purple-700",
+                  echeance.type === 'formation' && "bg-blue-100 text-blue-700"
+                )}
               >
                 {echeance.description}
               </div>
