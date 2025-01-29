@@ -4,24 +4,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+type JoursFeries = {
+  [key: string]: string;
+};
+
+const joursFeries2025: JoursFeries = {
+  '2025-01-01': 'Jour de l\'An',
+  '2025-04-21': 'Lundi de Pâques',
+  '2025-05-01': 'Fête du Travail',
+  '2025-05-08': 'Victoire 1945',
+  '2025-05-29': 'Ascension',
+  '2025-06-09': 'Lundi de Pentecôte',
+  '2025-07-14': 'Fête Nationale',
+  '2025-08-15': 'Assomption',
+  '2025-11-01': 'Toussaint',
+  '2025-11-11': 'Armistice',
+  '2025-12-25': 'Noël'
+};
+
 const CalendrierPaie = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('year');
 
-  const joursFeries2025 = {
-    '2025-01-01': 'Jour de l\'An',
-    '2025-04-21': 'Lundi de Pâques',
-    '2025-05-01': 'Fête du Travail',
-    '2025-05-08': 'Victoire 1945',
-    '2025-05-29': 'Ascension',
-    '2025-06-09': 'Lundi de Pentecôte',
-    '2025-07-14': 'Fête Nationale',
-    '2025-08-15': 'Assomption',
-    '2025-11-01': 'Toussaint',
-    '2025-11-11': 'Armistice',
-    '2025-12-25': 'Noël'
-  };
-
+  // Fonction pour obtenir le prochain jour ouvré
   const getNextWorkingDay = (date: Date) => {
     const nextDay = new Date(date);
     do {
@@ -38,7 +43,7 @@ const CalendrierPaie = () => {
     const date = new Date(year, month, day);
     const dateString = date.toISOString().split('T')[0];
     const dayOfWeek = date.getDay();
-    
+
     if (dayOfWeek === 0 || dayOfWeek === 6 || joursFeries2025[dateString]) {
       return getNextWorkingDay(date);
     }
@@ -66,10 +71,16 @@ const CalendrierPaie = () => {
     return { workDays, workableDays };
   };
 
-  const getEcheancesPaie = (year: number, month: number) => {
+  type Echeance = {
+    date: number;
+    description: string;
+    importance: 'high' | 'normal';
+  };
+
+  const getEcheancesPaie = (year: number, month: number): Echeance[] => {
     const dsn50Plus = calculateDSNDate(year, month, 5);
     const dsnMoins50 = calculateDSNDate(year, month, 15);
-    
+
     return [
       { 
         date: dsn50Plus.getDate(), 
@@ -88,7 +99,7 @@ const CalendrierPaie = () => {
     const months = Array.from({ length: 12 }, (_, i) => {
       const date = new Date(selectedDate.getFullYear(), i, 1);
       const { workDays, workableDays } = calculateWorkDays(selectedDate.getFullYear(), i);
-      
+
       const feriesDuMois = Object.entries(joursFeries2025)
         .filter(([date]) => date.startsWith(`${selectedDate.getFullYear()}-${String(i + 1).padStart(2, '0')}`))
         .map(([date, label]) => {
@@ -102,7 +113,7 @@ const CalendrierPaie = () => {
 
       const dsn50Plus = calculateDSNDate(date.getFullYear(), i, 5);
       const dsnMoins50 = calculateDSNDate(date.getFullYear(), i, 15);
-      
+
       return (
         <motion.div
           key={i}
@@ -111,43 +122,47 @@ const CalendrierPaie = () => {
           transition={{ duration: 0.3, delay: i * 0.05 }}
         >
           <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-300 border-[#42D80F]/20 hover:border-[#42D80F]"
+            className={cn(
+              "cursor-pointer transition-all duration-300 bg-white/50 backdrop-blur-sm",
+              "hover:shadow-lg hover:scale-[1.02]",
+              "border border-[#42D80F]/20 hover:border-[#42D80F]/40"
+            )}
             onClick={() => {
               setSelectedDate(date);
               setViewMode('month');
             }}
           >
-            <CardContent className="p-4">
-              <h3 className="font-bold text-lg text-[#42D80F] mb-3 font-figtree">
+            <CardContent className="p-6">
+              <h3 className="font-bold text-xl text-gray-800 mb-4 font-figtree">
                 {date.toLocaleDateString('fr-FR', { month: 'long' })}
               </h3>
-              <div className="space-y-3 text-sm font-figtree">
-                <div className="space-y-1">
-                  <div className="flex justify-between text-gray-700">
-                    <span>Jours ouvrés</span>
-                    <span className="font-semibold">{workDays}</span>
+              <div className="space-y-4 font-figtree">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gray-50/80 p-3 rounded-lg">
+                    <div className="text-sm font-medium text-gray-600">Jours ouvrés</div>
+                    <div className="text-xl font-bold text-[#42D80F]">{workDays}</div>
                   </div>
-                  <div className="flex justify-between text-gray-700">
-                    <span>Jours ouvrables</span>
-                    <span className="font-semibold">{workableDays}</span>
+                  <div className="bg-gray-50/80 p-3 rounded-lg">
+                    <div className="text-sm font-medium text-gray-600">Jours ouvrables</div>
+                    <div className="text-xl font-bold text-[#42D80F]">{workableDays}</div>
                   </div>
                 </div>
-                
+
                 {feriesDuMois.length > 0 && (
-                  <div className="text-red-600 text-xs space-y-1">
-                    <div className="font-semibold">Jours fériés :</div>
+                  <div className="text-gray-600 text-sm space-y-1">
+                    <div className="font-medium">Jours fériés :</div>
                     {feriesDuMois.map(({ jour, label }) => (
-                      <div key={jour}>{jour} - {label}</div>
+                      <div key={jour} className="text-gray-500">{jour} - {label}</div>
                     ))}
                   </div>
                 )}
-                
-                <div className="text-[#42D80F] text-xs space-y-1">
-                  <div className="font-semibold">Échéances DSN :</div>
-                  <div>
+
+                <div className="text-gray-600 text-sm space-y-1">
+                  <div className="font-medium text-[#42D80F]">Échéances DSN :</div>
+                  <div className="text-gray-500">
                     +50 salariés : {dsn50Plus.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' })}
                   </div>
-                  <div>
+                  <div className="text-gray-500">
                     -50 salariés : {dsnMoins50.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' })}
                   </div>
                 </div>
@@ -190,32 +205,33 @@ const CalendrierPaie = () => {
         >
           <div 
             className={cn(
-              "p-2 border rounded-lg min-h-24",
+              "p-3 rounded-lg min-h-24",
+              "border border-gray-100",
               isWeekend ? "bg-gray-50/50" : 
-              isFerie ? "bg-red-50/50" : 
+              isFerie ? "bg-gray-50/50" : 
               "bg-white",
               "hover:shadow-md transition-shadow duration-200"
             )}
           >
             <div className="flex justify-between items-center mb-1">
               <span className={cn(
-                "font-bold font-figtree",
+                "font-medium font-figtree",
                 isWeekend ? "text-gray-400" :
-                isFerie ? "text-red-500" :
+                isFerie ? "text-gray-600" :
                 "text-gray-700"
               )}>
                 {i + 1}
               </span>
             </div>
             {isFerie && (
-              <div className="text-xs text-red-600 font-medium mb-1 font-figtree">
+              <div className="text-xs text-gray-500 font-figtree mb-1">
                 {joursFeries2025[dateString]}
               </div>
             )}
             {echeancesDuJour.map((echeance, idx) => (
               <div 
                 key={idx}
-                className="text-xs p-1.5 rounded mt-1 bg-[#42D80F]/10 text-[#42D80F] font-semibold font-figtree"
+                className="text-xs p-1.5 rounded mt-1 bg-[#42D80F]/10 text-[#42D80F] font-medium font-figtree"
               >
                 {echeance.description}
               </div>
@@ -230,22 +246,22 @@ const CalendrierPaie = () => {
     ));
 
     return (
-      <Card className="border-[#42D80F]/20">
+      <Card className="border-[#42D80F]/10">
         <CardContent className="p-6">
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-[#42D80F]/10 p-4 rounded-lg">
-              <div className="text-sm font-medium text-gray-700 font-figtree">Jours ouvrés</div>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-sm font-medium text-gray-600 font-figtree">Jours ouvrés</div>
               <div className="text-2xl font-bold text-[#42D80F] font-figtree">{workDays}</div>
             </div>
-            <div className="bg-[#42D80F]/10 p-4 rounded-lg">
-              <div className="text-sm font-medium text-gray-700 font-figtree">Jours ouvrables</div>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-sm font-medium text-gray-600 font-figtree">Jours ouvrables</div>
               <div className="text-2xl font-bold text-[#42D80F] font-figtree">{workableDays}</div>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-7 gap-2">
             {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map(day => (
-              <div key={day} className="font-bold text-center p-2 text-gray-600 font-figtree">
+              <div key={day} className="font-medium text-center p-2 text-gray-500 font-figtree">
                 {day}
               </div>
             ))}
@@ -273,11 +289,11 @@ const CalendrierPaie = () => {
             }
           }}
         >
-          <ChevronLeft className="h-6 w-6 text-[#42D80F]" />
+          <ChevronLeft className="h-6 w-6 text-gray-600" />
         </button>
-        
+
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-[#42D80F]">
+          <h2 className="text-2xl font-bold text-gray-800">
             {viewMode === 'year' 
               ? selectedDate.getFullYear()
               : `${selectedDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`
@@ -285,7 +301,7 @@ const CalendrierPaie = () => {
           </h2>
           {viewMode === 'month' && (
             <button 
-              className="flex items-center gap-2 text-[#42D80F] hover:bg-[#42D80F]/10 p-2 rounded-lg transition-colors"
+              className="flex items-center gap-2 text-gray-600 hover:bg-[#42D80F]/10 p-2 rounded-lg transition-colors"
               onClick={() => setViewMode('year')}
             >
               <Calendar className="h-5 w-5" />
@@ -308,7 +324,7 @@ const CalendrierPaie = () => {
             }
           }}
         >
-          <ChevronRight className="h-6 w-6 text-[#42D80F]" />
+          <ChevronRight className="h-6 w-6 text-gray-600" />
         </button>
       </div>
 
