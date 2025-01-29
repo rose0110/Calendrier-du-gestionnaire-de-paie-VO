@@ -70,9 +70,9 @@ type Echeance = {
 
 const echeancesAnnuelles2025 = [
   {
-    date: new Date(2025, 3, 5), // 5 avril 2025
-    description: 'Déclaration CSA 2024',
-    type: 'csa',
+    date: new Date(2025, 2, 1), // 1er mars 2025
+    description: 'Contributions formation et dialogue social 2024 (OPCO)',
+    type: 'declaration',
     importance: 'high'
   },
   {
@@ -82,7 +82,7 @@ const echeancesAnnuelles2025 = [
     importance: 'high'
   },
   {
-    date: new Date(2025, 4, 27), // 27 mai 2025 (date provisoire)
+    date: new Date(2025, 4, 27), // 27 mai 2025 (provisoire)
     description: 'Ouverture plateforme SOLTéA',
     type: 'soltea',
     importance: 'high'
@@ -345,7 +345,8 @@ const CalendrierPaie = () => {
                         ea.type === 'dsn' && "bg-[#42D80F]/10 text-[#42D80F]",
                         ea.type === 'csa' && "bg-amber-100 text-amber-700",
                         ea.type === 'handicap' && "bg-purple-100 text-purple-700",
-                        ea.type === 'soltea' && "bg-blue-100 text-blue-700"
+                        ea.type === 'soltea' && "bg-blue-100 text-blue-700",
+                        ea.type === 'declaration' && "bg-green-100 text-green-700"
                       )}
                     >
                       {ea.date} - {ea.description}
