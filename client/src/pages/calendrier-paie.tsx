@@ -432,6 +432,10 @@ const CalendrierPaie = () => {
     const isStartDate = calculatedDate &&
       calculatedDate.startDate.toDateString() === date.toDateString();
 
+    // Récupérer les échéances pour ce jour
+    const echeancesDuJour = getEcheancesPaie(date.getFullYear(), date.getMonth())
+      .filter(e => e.date === date.getDate());
+
     return (
       <ContextMenu>
         <ContextMenuTrigger>
@@ -440,7 +444,7 @@ const CalendrierPaie = () => {
               "p-3 rounded-lg min-h-24",
               "border border-gray-100",
               "transition-all duration-200",
-              isWeekend && "bg-gradient-to-br from-gray-100/80 to-gray-50/80",
+              isWeekend && "bg-[#42D80F]/20", // Fond vert plus visible pour les weekends
               isFerie && "bg-gradient-to-br from-blue-50/80 to-white",
               isCalculatedDate && "ring-2 ring-purple-500 ring-offset-2",
               isStartDate && "ring-2 ring-green-500 ring-offset-2",
@@ -450,7 +454,7 @@ const CalendrierPaie = () => {
             <div className="flex justify-between items-center mb-1">
               <span className={cn(
                 "font-medium font-figtree",
-                isWeekend ? "text-gray-400" :
+                isWeekend ? "text-[#42D80F]/80" :
                   isFerie ? "text-blue-600" :
                     "text-gray-700"
               )}>
@@ -462,6 +466,21 @@ const CalendrierPaie = () => {
                 {joursFeries2025[dateString]}
               </div>
             )}
+            {echeancesDuJour.map((echeance, idx) => (
+              <div 
+                key={idx}
+                className={cn(
+                  "text-xs p-1.5 rounded mt-1",
+                  echeance.type === 'dsn' && "bg-[#42D80F]/10 text-[#42D80F]",
+                  echeance.type === 'csa' && "bg-amber-100 text-amber-700",
+                  echeance.type === 'handicap' && "bg-purple-100 text-purple-700",
+                  echeance.type === 'soltea' && "bg-blue-100 text-blue-700",
+                  echeance.type === 'declaration' && "bg-purple-100 text-purple-700"
+                )}
+              >
+                {echeance.description}
+              </div>
+            ))}
             {isCalculatedDate && (
               <div className="text-xs p-1.5 rounded mt-1 bg-purple-100 text-purple-700 font-medium">
                 Date calculée ({calculatedDate.days} jours {calculatedDate.type})
