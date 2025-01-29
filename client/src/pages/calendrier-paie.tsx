@@ -71,13 +71,13 @@ type Echeance = {
 const echeancesAnnuelles2025 = [
   {
     date: new Date(2025, 2, 1), // 1er mars 2025
-    description: 'Contributions formation et dialogue social 2024 (OPCO)',
+    description: 'Contributions formation et dialogue social (OPCO)',
     type: 'declaration',
     importance: 'high'
   },
   {
     date: new Date(2025, 4, 5), // 5 mai 2025
-    description: 'DOETH 2024',
+    description: 'DOETH',
     type: 'handicap',
     importance: 'high'
   },
@@ -346,7 +346,7 @@ const CalendrierPaie = () => {
                         ea.type === 'csa' && "bg-amber-100 text-amber-700",
                         ea.type === 'handicap' && "bg-purple-100 text-purple-700",
                         ea.type === 'soltea' && "bg-blue-100 text-blue-700",
-                        ea.type === 'declaration' && "bg-green-100 text-green-700"
+                        ea.type === 'declaration' && "bg-purple-100 text-purple-700"
                       )}
                     >
                       {ea.date} - {ea.description}
@@ -622,28 +622,24 @@ const CalendrierPaie = () => {
 
       <div className="max-w-6xl mx-auto p-6 font-figtree">
         <div className="flex justify-between items-center mb-8">
-          <button
-            className="flex items-center p-2 hover:bg-[#42D80F]/10 rounded-lg transition-colors"
-            onClick={() => {
-              if (viewMode === 'month') {
+          {viewMode === 'month' && (
+            <button
+              className="flex items-center p-2 hover:bg-[#42D80F]/10 rounded-lg transition-colors"
+              onClick={() => {
                 const newDate = new Date(selectedDate);
                 newDate.setMonth(selectedDate.getMonth() - 1);
                 setSelectedDate(newDate);
-              } else {
-                const newDate = new Date(selectedDate);
-                newDate.setFullYear(selectedDate.getFullYear() - 1);
-                setSelectedDate(newDate);
-              }
-            }}
-          >
-            <ChevronLeft className="h-6 w-6 text-gray-600" />
-          </button>
+              }}
+            >
+              <ChevronLeft className="h-6 w-6 text-gray-600" />
+            </button>
+          )}
 
           <div className="flex items-center gap-4">
             <h2 className="text-2xl font-bold text-gray-800">
               {viewMode === 'year'
-                ? selectedDate.getFullYear()
-                : `${selectedDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`
+                ? "2025"
+                : `${selectedDate.toLocaleDateString('fr-FR', { month: 'long' })} 2025`
               }
             </h2>
             {viewMode === 'month' && (
@@ -657,22 +653,18 @@ const CalendrierPaie = () => {
             )}
           </div>
 
-          <button
-            className="flex items-center p-2 hover:bg-[#42D80F]/10 rounded-lg transition-colors"
-            onClick={() => {
-              if (viewMode === 'month') {
+          {viewMode === 'month' && (
+            <button
+              className="flex items-center p-2 hover:bg-[#42D80F]/10 rounded-lg transition-colors"
+              onClick={() => {
                 const newDate = new Date(selectedDate);
                 newDate.setMonth(selectedDate.getMonth() + 1);
                 setSelectedDate(newDate);
-              } else {
-                const newDate = new Date(selectedDate);
-                newDate.setFullYear(selectedDate.getFullYear() + 1);
-                setSelectedDate(newDate);
-              }
-            }}
-          >
-            <ChevronRight className="h-6 w-6 text-gray-600" />
-          </button>
+              }}
+            >
+              <ChevronRight className="h-6 w-6 text-gray-600" />
+            </button>
+          )}
         </div>
 
         <AnimatePresence mode="wait">
