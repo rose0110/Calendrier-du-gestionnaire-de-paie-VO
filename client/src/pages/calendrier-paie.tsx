@@ -22,7 +22,7 @@ const joursFeries2025: JoursFeries = {
   '2025-12-25': 'Noël'
 };
 
-type TypeEcheance = 'dsn' | 'taxe' | 'formation';
+type TypeEcheance = 'dsn' | 'declaration' | 'csa' | 'handicap' | 'soltea';
 
 type Echeance = {
   date: number;
@@ -33,21 +33,33 @@ type Echeance = {
 
 const echeancesAnnuelles2025 = [
   {
-    date: new Date(2025, 2, 1), // 1er Mars 2025
-    description: 'Solde de la taxe d\'apprentissage',
-    type: 'taxe',
+    date: new Date(2025, 3, 5), // 5 avril 2025
+    description: 'CSA 2024 - DSN entreprises +50 salariés',
+    type: 'csa',
     importance: 'high'
   },
   {
-    date: new Date(2025, 4, 31), // 31 Mai 2025
-    description: 'Versement contribution conventionnelle',
-    type: 'formation',
+    date: new Date(2025, 3, 15), // 15 avril 2025
+    description: 'CSA 2024 - DSN entreprises -50 salariés',
+    type: 'csa',
     importance: 'high'
   },
   {
-    date: new Date(2025, 5, 1), // 1er Juin 2025
-    description: 'Formation professionnelle et CPF',
-    type: 'formation',
+    date: new Date(2025, 4, 5), // 5 mai 2025
+    description: 'DOETH 2024 - DSN entreprises +50 salariés',
+    type: 'handicap',
+    importance: 'high'
+  },
+  {
+    date: new Date(2025, 4, 15), // 15 mai 2025
+    description: 'DOETH 2024 - DSN entreprises -50 salariés',
+    type: 'handicap',
+    importance: 'high'
+  },
+  {
+    date: new Date(2025, 4, 27), // 27 mai 2025 (date provisoire)
+    description: 'Ouverture plateforme SOLTéA',
+    type: 'soltea',
     importance: 'high'
   }
 ];
@@ -216,7 +228,11 @@ const CalendrierPaie = () => {
                       className={cn(
                         "text-gray-500 text-sm px-2 py-1 rounded-md",
                         ea.type === 'taxe' && "bg-purple-50 text-purple-700",
-                        ea.type === 'formation' && "bg-blue-50 text-blue-700"
+                        ea.type === 'formation' && "bg-blue-50 text-blue-700",
+                        ea.type === 'dsn' && "bg-[#42D80F]/10 text-[#42D80F]",
+                        ea.type === 'csa' && "bg-amber-100 text-amber-700",
+                        ea.type === 'handicap' && "bg-purple-100 text-purple-700",
+                        ea.type === 'soltea' && "bg-blue-100 text-blue-700"
                       )}
                     >
                       {ea.date} - {ea.description}
@@ -295,7 +311,10 @@ const CalendrierPaie = () => {
                   "text-xs p-1.5 rounded mt-1 font-medium font-figtree",
                   echeance.type === 'dsn' && "bg-[#42D80F]/10 text-[#42D80F]",
                   echeance.type === 'taxe' && "bg-purple-100 text-purple-700",
-                  echeance.type === 'formation' && "bg-blue-100 text-blue-700"
+                  echeance.type === 'formation' && "bg-blue-100 text-blue-700",
+                  echeance.type === 'csa' && "bg-amber-100 text-amber-700",
+                  echeance.type === 'handicap' && "bg-purple-100 text-purple-700",
+                  echeance.type === 'soltea' && "bg-blue-100 text-blue-700"
                 )}
               >
                 {echeance.description}
