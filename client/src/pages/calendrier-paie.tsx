@@ -1,8 +1,18 @@
 import React, { useState } from 'react';
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+} from "@/components/ui/context-menu"
+import { Button } from "@/components/ui/button";
 
 type JoursFeries = {
   [key: string]: string;
@@ -52,9 +62,22 @@ const echeancesAnnuelles2025 = [
   }
 ];
 
+const DELAI_OPTIONS = [
+  { value: 30, label: '30 jours' },
+  { value: 60, label: '60 jours' },
+  { value: 90, label: '90 jours' },
+  { value: 180, label: '180 jours' }
+];
+
 const CalendrierPaie = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('year');
+  const [calculatedDate, setCalculatedDate] = useState<{
+    date: Date;
+    startDate: Date;
+    days: number;
+    type: 'calendaire' | 'ouvré' | 'ouvrable';
+  } | null>(null);
 
   // Fonction pour obtenir le prochain jour ouvré
   const getNextWorkingDay = (date: Date) => {
@@ -107,14 +130,14 @@ const CalendrierPaie = () => {
 
     // Commencer avec les échéances DSN mensuelles
     const echeances: Echeance[] = [
-      { 
-        date: dsn50Plus.getDate(), 
+      {
+        date: dsn50Plus.getDate(),
         description: 'DSN entreprises +50 salariés',
         type: 'dsn',
         importance: 'high'
       },
-      { 
-        date: dsnMoins50.getDate(), 
+      {
+        date: dsnMoins50.getDate(),
         description: 'DSN entreprises -50 salariés',
         type: 'dsn',
         importance: 'high'
@@ -134,6 +157,36 @@ const CalendrierPaie = () => {
       });
 
     return echeances;
+  };
+
+  const calculateFutureDate = (startDate: Date, days: number, type: 'calendaire' | 'ouvré' | 'ouvrable') => {
+    let remainingDays = days;
+    const result = new Date(startDate);
+
+    if (type === 'calendaire') {
+      result.setDate(result.getDate() + days);
+      return result;
+    }
+
+    while (remainingDays > 0) {
+      result.setDate(result.getDate() + 1);
+      const dateString = result.toISOString().split('T')[0];
+      const dayOfWeek = result.getDay();
+
+      if (type === 'ouvré') {
+        // Ne compte que les jours ouvrés (ni weekend ni fériés)
+        if (dayOfWeek !== 0 && dayOfWeek !== 6 && !joursFeries2025[dateString]) {
+          remainingDays--;
+        }
+      } else if (type === 'ouvrable') {
+        // Ne compte pas les dimanches
+        if (dayOfWeek !== 0) {
+          remainingDays--;
+        }
+      }
+    }
+
+    return result;
   };
 
   const renderAnnualView = () => {
@@ -164,7 +217,7 @@ const CalendrierPaie = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: i * 0.05 }}
         >
-          <Card 
+          <Card
             className={cn(
               "cursor-pointer transition-all duration-300",
               "hover:shadow-lg hover:scale-[1.02]",
@@ -198,8 +251,8 @@ const CalendrierPaie = () => {
                   <div className="space-y-1">
                     <div className="font-medium text-gray-700">Jours fériés :</div>
                     {feriesDuMois.map(({ jour, label }) => (
-                      <div 
-                        key={jour} 
+                      <div
+                        key={jour}
                         className="text-gray-600 text-sm px-2 py-1 rounded-md bg-gradient-to-r from-orange-50 to-orange-100/50"
                       >
                         {jour} - {label}
@@ -211,7 +264,7 @@ const CalendrierPaie = () => {
                 <div className="space-y-1">
                   <div className="font-medium text-[#42D80F]">Échéances :</div>
                   {echeancesDuMois.map((ea, idx) => (
-                    <div 
+                    <div
                       key={idx}
                       className={cn(
                         "text-gray-500 text-sm px-2 py-1 rounded-md",
@@ -253,13 +306,7 @@ const CalendrierPaie = () => {
 
     const days = Array.from({ length: daysInMonth }, (_, i) => {
       const date = new Date(year, month, i + 1);
-      const dateString = date.toISOString().split('T')[0];
-      const dayOfWeek = date.getDay();
-      // Ajuster pour le week-end (6 = Samedi, 0 = Dimanche)
-      const isWeekend = dayOfWeek === 6 || dayOfWeek === 0;
-      const isFerie = joursFeries2025[dateString];
-      const echeancesDuJour = echeances.filter(e => e.date === (i + 1));
-
+      const renderDayComponent = renderDay(date);
       return (
         <motion.div
           key={i}
@@ -267,48 +314,7 @@ const CalendrierPaie = () => {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.2, delay: i * 0.01 }}
         >
-          <div 
-            className={cn(
-              "p-3 rounded-lg min-h-24",
-              "border border-gray-100",
-              "transition-all duration-200",
-              isWeekend && "bg-gradient-to-br from-gray-100/80 to-gray-50/80",
-              isFerie && "bg-gradient-to-br from-blue-50/80 to-white",
-              !isWeekend && !isFerie && "bg-white hover:shadow-md"
-            )}
-          >
-            <div className="flex justify-between items-center mb-1">
-              <span className={cn(
-                "font-medium font-figtree",
-                isWeekend ? "text-gray-400" :
-                isFerie ? "text-blue-600" :
-                "text-gray-700"
-              )}>
-                {i + 1}
-              </span>
-            </div>
-            {isFerie && (
-              <div className="text-xs text-blue-500 font-figtree mb-1">
-                {joursFeries2025[dateString]}
-              </div>
-            )}
-            {echeancesDuJour.map((echeance, idx) => (
-              <div 
-                key={idx}
-                className={cn(
-                  "text-xs p-1.5 rounded mt-1 font-medium font-figtree",
-                  echeance.type === 'dsn' && "bg-[#42D80F]/10 text-[#42D80F]",
-                  echeance.type === 'taxe' && "bg-purple-100 text-purple-700",
-                  echeance.type === 'formation' && "bg-blue-100 text-blue-700",
-                  echeance.type === 'csa' && "bg-amber-100 text-amber-700",
-                  echeance.type === 'handicap' && "bg-purple-100 text-purple-700",
-                  echeance.type === 'soltea' && "bg-blue-100 text-blue-700"
-                )}
-              >
-                {echeance.description}
-              </div>
-            ))}
-          </div>
+          {renderDayComponent}
         </motion.div>
       );
     });
@@ -344,10 +350,106 @@ const CalendrierPaie = () => {
     );
   };
 
+  const renderDay = (date: Date, isMonthView: boolean = true) => {
+    const dateString = date.toISOString().split('T')[0];
+    const dayOfWeek = date.getDay();
+    const isWeekend = dayOfWeek === 6 || dayOfWeek === 0;
+    const isFerie = joursFeries2025[dateString];
+    const isCalculatedDate = calculatedDate &&
+      calculatedDate.date.toDateString() === date.toDateString();
+    const isStartDate = calculatedDate &&
+      calculatedDate.startDate.toDateString() === date.toDateString();
+
+    return (
+      <ContextMenu>
+        <ContextMenuTrigger>
+          <div
+            className={cn(
+              "p-3 rounded-lg min-h-24",
+              "border border-gray-100",
+              "transition-all duration-200",
+              isWeekend && "bg-gradient-to-br from-gray-100/80 to-gray-50/80",
+              isFerie && "bg-gradient-to-br from-blue-50/80 to-white",
+              isCalculatedDate && "ring-2 ring-purple-500 ring-offset-2",
+              isStartDate && "ring-2 ring-green-500 ring-offset-2",
+              !isWeekend && !isFerie && "bg-white hover:shadow-md"
+            )}
+          >
+            <div className="flex justify-between items-center mb-1">
+              <span className={cn(
+                "font-medium font-figtree",
+                isWeekend ? "text-gray-400" :
+                  isFerie ? "text-blue-600" :
+                    "text-gray-700"
+              )}>
+                {date.getDate()}
+              </span>
+            </div>
+            {isFerie && (
+              <div className="text-xs text-blue-500 font-figtree mb-1">
+                {joursFeries2025[dateString]}
+              </div>
+            )}
+            {isCalculatedDate && (
+              <div className="text-xs p-1.5 rounded mt-1 bg-purple-100 text-purple-700 font-medium">
+                Date calculée ({calculatedDate.days} jours {calculatedDate.type})
+              </div>
+            )}
+            {isStartDate && (
+              <div className="text-xs p-1.5 rounded mt-1 bg-green-100 text-green-700 font-medium">
+                Date de départ
+              </div>
+            )}
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuSub>
+            <ContextMenuSubTrigger>
+              <Plus className="w-4 h-4 mr-2" />
+              Calculer un délai
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+              {['calendaire', 'ouvré', 'ouvrable'].map((type) => (
+                <ContextMenuSub key={type}>
+                  <ContextMenuSubTrigger className="capitalize">
+                    {type}
+                  </ContextMenuSubTrigger>
+                  <ContextMenuSubContent>
+                    {DELAI_OPTIONS.map(({ value, label }) => (
+                      <ContextMenuItem
+                        key={value}
+                        onClick={() => {
+                          const result = calculateFutureDate(
+                            date,
+                            value,
+                            type as 'calendaire' | 'ouvré' | 'ouvrable'
+                          );
+                          setCalculatedDate({
+                            date: result,
+                            startDate: date,
+                            days: value,
+                            type: type as 'calendaire' | 'ouvré' | 'ouvrable'
+                          });
+                        }}
+                      >
+                        {label}
+                      </ContextMenuItem>
+                    ))}
+                  </ContextMenuSubContent>
+                </ContextMenuSub>
+              ))}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+        </ContextMenuContent>
+      </ContextMenu>
+    );
+  };
+
+
   return (
     <div className="max-w-6xl mx-auto p-6 font-figtree">
       <div className="flex justify-between items-center mb-8">
-        <button 
+        <button
           className="flex items-center p-2 hover:bg-[#42D80F]/10 rounded-lg transition-colors"
           onClick={() => {
             if (viewMode === 'month') {
@@ -366,13 +468,13 @@ const CalendrierPaie = () => {
 
         <div className="flex items-center gap-4">
           <h2 className="text-2xl font-bold text-gray-800">
-            {viewMode === 'year' 
+            {viewMode === 'year'
               ? selectedDate.getFullYear()
               : `${selectedDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`
             }
           </h2>
           {viewMode === 'month' && (
-            <button 
+            <button
               className="flex items-center gap-2 text-gray-600 hover:bg-[#42D80F]/10 p-2 rounded-lg transition-colors"
               onClick={() => setViewMode('year')}
             >
@@ -382,7 +484,7 @@ const CalendrierPaie = () => {
           )}
         </div>
 
-        <button 
+        <button
           className="flex items-center p-2 hover:bg-[#42D80F]/10 rounded-lg transition-colors"
           onClick={() => {
             if (viewMode === 'month') {
