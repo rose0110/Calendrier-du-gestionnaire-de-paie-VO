@@ -155,7 +155,12 @@ const CalendrierPaie = () => {
                   <div className="space-y-1">
                     <div className="font-medium text-gray-700">Jours fériés :</div>
                     {feriesDuMois.map(({ jour, label }) => (
-                      <div key={jour} className="text-gray-500 text-sm">{jour} - {label}</div>
+                      <div 
+                        key={jour} 
+                        className="text-gray-600 text-sm px-2 py-1 rounded-md bg-gradient-to-r from-orange-50 to-orange-100/50"
+                      >
+                        {jour} - {label}
+                      </div>
                     ))}
                   </div>
                 )}
