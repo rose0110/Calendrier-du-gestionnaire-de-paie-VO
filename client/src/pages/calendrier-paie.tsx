@@ -4,15 +4,42 @@ import { Card, CardContent } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
 } from "@/components/ui/context-menu"
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
 type JoursFeries = {
   [key: string]: string;
@@ -69,6 +96,12 @@ const DELAI_OPTIONS = [
   { value: 180, label: '180 jours' }
 ];
 
+const formSchema = z.object({
+  days: z.number().min(1, "Le nombre de jours doit être supérieur à 0"),
+  type: z.enum(['calendaire', 'ouvré', 'ouvrable']),
+  isRetractation: z.boolean().default(false),
+});
+
 const CalendrierPaie = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('year');
@@ -77,9 +110,20 @@ const CalendrierPaie = () => {
     startDate: Date;
     days: number;
     type: 'calendaire' | 'ouvré' | 'ouvrable';
+    isRetractation: boolean;
   } | null>(null);
+  const [isDelayDialogOpen, setIsDelayDialogOpen] = useState(false);
+  const [currentDate, setCurrentDate] = useState<Date | null>(null);
 
-  // Fonction pour obtenir le prochain jour ouvré
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      days: 1,
+      type: 'calendaire',
+      isRetractation: false,
+    },
+  });
+
   const getNextWorkingDay = (date: Date) => {
     const nextDay = new Date(date);
     do {
@@ -128,7 +172,6 @@ const CalendrierPaie = () => {
     const dsn50Plus = calculateDSNDate(year, month, 5);
     const dsnMoins50 = calculateDSNDate(year, month, 15);
 
-    // Commencer avec les échéances DSN mensuelles
     const echeances: Echeance[] = [
       {
         date: dsn50Plus.getDate(),
@@ -144,7 +187,6 @@ const CalendrierPaie = () => {
       }
     ];
 
-    // Ajouter les échéances annuelles pour ce mois
     echeancesAnnuelles2025
       .filter(ea => ea.date.getMonth() === month && ea.date.getFullYear() === year)
       .forEach(ea => {
@@ -159,12 +201,24 @@ const CalendrierPaie = () => {
     return echeances;
   };
 
-  const calculateFutureDate = (startDate: Date, days: number, type: 'calendaire' | 'ouvré' | 'ouvrable') => {
+  const calculateFutureDate = (
+    startDate: Date,
+    days: number,
+    type: 'calendaire' | 'ouvré' | 'ouvrable',
+    isRetractation: boolean = false
+  ) => {
     let remainingDays = days;
     const result = new Date(startDate);
 
     if (type === 'calendaire') {
       result.setDate(result.getDate() + days);
+      if (isRetractation) {
+        const dateString = result.toISOString().split('T')[0];
+        const dayOfWeek = result.getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6 || joursFeries2025[dateString]) {
+          return getNextWorkingDay(result);
+        }
+      }
       return result;
     }
 
@@ -174,12 +228,10 @@ const CalendrierPaie = () => {
       const dayOfWeek = result.getDay();
 
       if (type === 'ouvré') {
-        // Ne compte que les jours ouvrés (ni weekend ni fériés)
         if (dayOfWeek !== 0 && dayOfWeek !== 6 && !joursFeries2025[dateString]) {
           remainingDays--;
         }
       } else if (type === 'ouvrable') {
-        // Ne compte pas les dimanches
         if (dayOfWeek !== 0) {
           remainingDays--;
         }
@@ -187,6 +239,27 @@ const CalendrierPaie = () => {
     }
 
     return result;
+  };
+
+  const onSubmitDelay = (values: z.infer<typeof formSchema>) => {
+    if (!currentDate) return;
+
+    const result = calculateFutureDate(
+      currentDate,
+      values.days,
+      values.type,
+      values.isRetractation
+    );
+
+    setCalculatedDate({
+      date: result,
+      startDate: currentDate,
+      days: values.days,
+      type: values.type,
+      isRetractation: values.isRetractation
+    });
+
+    setIsDelayDialogOpen(false);
   };
 
   const renderAnnualView = () => {
@@ -299,7 +372,6 @@ const CalendrierPaie = () => {
     const month = selectedDate.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const firstDay = new Date(year, month, 1).getDay();
-    // Ajuster pour commencer par Lundi (0 = Lundi, 6 = Dimanche)
     const firstDayOfMonth = firstDay === 0 ? 6 : firstDay - 1;
     const { workDays, workableDays } = calculateWorkDays(year, month);
     const echeances = getEcheancesPaie(year, month);
@@ -350,7 +422,7 @@ const CalendrierPaie = () => {
     );
   };
 
-  const renderDay = (date: Date, isMonthView: boolean = true) => {
+  const renderDay = (date: Date) => {
     const dateString = date.toISOString().split('T')[0];
     const dayOfWeek = date.getDay();
     const isWeekend = dayOfWeek === 6 || dayOfWeek === 0;
@@ -393,6 +465,7 @@ const CalendrierPaie = () => {
             {isCalculatedDate && (
               <div className="text-xs p-1.5 rounded mt-1 bg-purple-100 text-purple-700 font-medium">
                 Date calculée ({calculatedDate.days} jours {calculatedDate.type})
+                {calculatedDate.isRetractation && " (Rétractation)"}
               </div>
             )}
             {isStartDate && (
@@ -403,109 +476,177 @@ const CalendrierPaie = () => {
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
-          <ContextMenuSub>
-            <ContextMenuSubTrigger>
-              <Plus className="w-4 h-4 mr-2" />
-              Calculer un délai
-            </ContextMenuSubTrigger>
-            <ContextMenuSubContent>
-              {['calendaire', 'ouvré', 'ouvrable'].map((type) => (
-                <ContextMenuSub key={type}>
-                  <ContextMenuSubTrigger className="capitalize">
-                    {type}
-                  </ContextMenuSubTrigger>
-                  <ContextMenuSubContent>
-                    {DELAI_OPTIONS.map(({ value, label }) => (
-                      <ContextMenuItem
-                        key={value}
-                        onClick={() => {
-                          const result = calculateFutureDate(
-                            date,
-                            value,
-                            type as 'calendaire' | 'ouvré' | 'ouvrable'
-                          );
-                          setCalculatedDate({
-                            date: result,
-                            startDate: date,
-                            days: value,
-                            type: type as 'calendaire' | 'ouvré' | 'ouvrable'
-                          });
-                        }}
-                      >
-                        {label}
-                      </ContextMenuItem>
-                    ))}
-                  </ContextMenuSubContent>
-                </ContextMenuSub>
-              ))}
-            </ContextMenuSubContent>
-          </ContextMenuSub>
+          <ContextMenuItem
+            onClick={() => {
+              setCurrentDate(date);
+              setIsDelayDialogOpen(true);
+            }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Calculer un délai
+          </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
     );
   };
 
-
   return (
-    <div className="max-w-6xl mx-auto p-6 font-figtree">
-      <div className="flex justify-between items-center mb-8">
-        <button
-          className="flex items-center p-2 hover:bg-[#42D80F]/10 rounded-lg transition-colors"
-          onClick={() => {
-            if (viewMode === 'month') {
-              const newDate = new Date(selectedDate);
-              newDate.setMonth(selectedDate.getMonth() - 1);
-              setSelectedDate(newDate);
-            } else {
-              const newDate = new Date(selectedDate);
-              newDate.setFullYear(selectedDate.getFullYear() - 1);
-              setSelectedDate(newDate);
-            }
-          }}
-        >
-          <ChevronLeft className="h-6 w-6 text-gray-600" />
-        </button>
+    <>
+      <Dialog open={isDelayDialogOpen} onOpenChange={setIsDelayDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Calculer un délai</DialogTitle>
+            <DialogDescription>
+              À partir du {currentDate?.toLocaleDateString('fr-FR', { dateStyle: 'long' })}
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmitDelay)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="days"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre de jours</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        {...field}
+                        onChange={e => field.onChange(parseInt(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-gray-800">
-            {viewMode === 'year'
-              ? selectedDate.getFullYear()
-              : `${selectedDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`
-            }
-          </h2>
-          {viewMode === 'month' && (
-            <button
-              className="flex items-center gap-2 text-gray-600 hover:bg-[#42D80F]/10 p-2 rounded-lg transition-colors"
-              onClick={() => setViewMode('year')}
-            >
-              <Calendar className="h-5 w-5" />
-              Vue annuelle
-            </button>
-          )}
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type de délai</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez un type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="calendaire">Calendaire</SelectItem>
+                        <SelectItem value="ouvré">Ouvré</SelectItem>
+                        <SelectItem value="ouvrable">Ouvrable</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isRetractation"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Délai de rétractation
+                      </FormLabel>
+                      <FormDescription>
+                        La date d'échéance ne peut pas tomber un weekend ou un jour férié
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDelayDialogOpen(false)}
+                >
+                  Annuler
+                </Button>
+                <Button type="submit">
+                  Calculer
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      <div className="max-w-6xl mx-auto p-6 font-figtree">
+        <div className="flex justify-between items-center mb-8">
+          <button
+            className="flex items-center p-2 hover:bg-[#42D80F]/10 rounded-lg transition-colors"
+            onClick={() => {
+              if (viewMode === 'month') {
+                const newDate = new Date(selectedDate);
+                newDate.setMonth(selectedDate.getMonth() - 1);
+                setSelectedDate(newDate);
+              } else {
+                const newDate = new Date(selectedDate);
+                newDate.setFullYear(selectedDate.getFullYear() - 1);
+                setSelectedDate(newDate);
+              }
+            }}
+          >
+            <ChevronLeft className="h-6 w-6 text-gray-600" />
+          </button>
+
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl font-bold text-gray-800">
+              {viewMode === 'year'
+                ? selectedDate.getFullYear()
+                : `${selectedDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`
+              }
+            </h2>
+            {viewMode === 'month' && (
+              <button
+                className="flex items-center gap-2 text-gray-600 hover:bg-[#42D80F]/10 p-2 rounded-lg transition-colors"
+                onClick={() => setViewMode('year')}
+              >
+                <Calendar className="h-5 w-5" />
+                Vue annuelle
+              </button>
+            )}
+          </div>
+
+          <button
+            className="flex items-center p-2 hover:bg-[#42D80F]/10 rounded-lg transition-colors"
+            onClick={() => {
+              if (viewMode === 'month') {
+                const newDate = new Date(selectedDate);
+                newDate.setMonth(selectedDate.getMonth() + 1);
+                setSelectedDate(newDate);
+              } else {
+                const newDate = new Date(selectedDate);
+                newDate.setFullYear(selectedDate.getFullYear() + 1);
+                setSelectedDate(newDate);
+              }
+            }}
+          >
+            <ChevronRight className="h-6 w-6 text-gray-600" />
+          </button>
         </div>
 
-        <button
-          className="flex items-center p-2 hover:bg-[#42D80F]/10 rounded-lg transition-colors"
-          onClick={() => {
-            if (viewMode === 'month') {
-              const newDate = new Date(selectedDate);
-              newDate.setMonth(selectedDate.getMonth() + 1);
-              setSelectedDate(newDate);
-            } else {
-              const newDate = new Date(selectedDate);
-              newDate.setFullYear(selectedDate.getFullYear() + 1);
-              setSelectedDate(newDate);
-            }
-          }}
-        >
-          <ChevronRight className="h-6 w-6 text-gray-600" />
-        </button>
+        <AnimatePresence mode="wait">
+          {viewMode === 'year' ? renderAnnualView() : renderMonthView()}
+        </AnimatePresence>
       </div>
-
-      <AnimatePresence mode="wait">
-        {viewMode === 'year' ? renderAnnualView() : renderMonthView()}
-      </AnimatePresence>
-    </div>
+    </>
   );
 };
 
