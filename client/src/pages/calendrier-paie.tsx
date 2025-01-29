@@ -123,8 +123,9 @@ const CalendrierPaie = () => {
         >
           <Card 
             className={cn(
-              "cursor-pointer transition-all duration-300 bg-white/50 backdrop-blur-sm",
+              "cursor-pointer transition-all duration-300",
               "hover:shadow-lg hover:scale-[1.02]",
+              "bg-gradient-to-br from-white via-white to-gray-50",
               "border border-[#42D80F]/20 hover:border-[#42D80F]/40"
             )}
             onClick={() => {
@@ -133,36 +134,38 @@ const CalendrierPaie = () => {
             }}
           >
             <CardContent className="p-6">
-              <h3 className="font-bold text-xl text-gray-800 mb-4 font-figtree">
-                {date.toLocaleDateString('fr-FR', { month: 'long' })}
-              </h3>
+              <div className="bg-[#42D80F]/5 -m-6 mb-4 p-6">
+                <h3 className="font-bold text-xl text-gray-800 font-figtree">
+                  {date.toLocaleDateString('fr-FR', { month: 'long' })}
+                </h3>
+              </div>
               <div className="space-y-4 font-figtree">
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-gray-50/80 p-3 rounded-lg">
+                  <div className="bg-gradient-to-br from-gray-50 to-white p-3 rounded-lg border border-gray-100">
                     <div className="text-sm font-medium text-gray-600">Jours ouvrés</div>
                     <div className="text-xl font-bold text-[#42D80F]">{workDays}</div>
                   </div>
-                  <div className="bg-gray-50/80 p-3 rounded-lg">
+                  <div className="bg-gradient-to-br from-gray-50 to-white p-3 rounded-lg border border-gray-100">
                     <div className="text-sm font-medium text-gray-600">Jours ouvrables</div>
                     <div className="text-xl font-bold text-[#42D80F]">{workableDays}</div>
                   </div>
                 </div>
 
                 {feriesDuMois.length > 0 && (
-                  <div className="text-gray-600 text-sm space-y-1">
-                    <div className="font-medium">Jours fériés :</div>
+                  <div className="space-y-1">
+                    <div className="font-medium text-gray-700">Jours fériés :</div>
                     {feriesDuMois.map(({ jour, label }) => (
-                      <div key={jour} className="text-gray-500">{jour} - {label}</div>
+                      <div key={jour} className="text-gray-500 text-sm">{jour} - {label}</div>
                     ))}
                   </div>
                 )}
 
-                <div className="text-gray-600 text-sm space-y-1">
+                <div className="space-y-1">
                   <div className="font-medium text-[#42D80F]">Échéances DSN :</div>
-                  <div className="text-gray-500">
+                  <div className="text-gray-500 text-sm">
                     +50 salariés : {dsn50Plus.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' })}
                   </div>
-                  <div className="text-gray-500">
+                  <div className="text-gray-500 text-sm">
                     -50 salariés : {dsnMoins50.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' })}
                   </div>
                 </div>
@@ -184,7 +187,9 @@ const CalendrierPaie = () => {
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const firstDayOfMonth = new Date(year, month, 1).getDay();
+    const firstDay = new Date(year, month, 1).getDay();
+    // Ajuster pour commencer par Lundi (0 = Lundi, 6 = Dimanche)
+    const firstDayOfMonth = firstDay === 0 ? 6 : firstDay - 1;
     const { workDays, workableDays } = calculateWorkDays(year, month);
     const echeances = getEcheancesPaie(year, month);
 
@@ -192,7 +197,8 @@ const CalendrierPaie = () => {
       const date = new Date(year, month, i + 1);
       const dateString = date.toISOString().split('T')[0];
       const dayOfWeek = date.getDay();
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      // Ajuster pour le week-end (6 = Samedi, 0 = Dimanche)
+      const isWeekend = dayOfWeek === 6 || dayOfWeek === 0;
       const isFerie = joursFeries2025[dateString];
       const echeancesDuJour = echeances.filter(e => e.date === (i + 1));
 
@@ -207,24 +213,24 @@ const CalendrierPaie = () => {
             className={cn(
               "p-3 rounded-lg min-h-24",
               "border border-gray-100",
-              isWeekend ? "bg-gray-50/50" : 
-              isFerie ? "bg-gray-50/50" : 
-              "bg-white",
-              "hover:shadow-md transition-shadow duration-200"
+              "transition-all duration-200",
+              isWeekend && "bg-gradient-to-br from-gray-100/80 to-gray-50/80",
+              isFerie && "bg-gradient-to-br from-blue-50/80 to-white",
+              !isWeekend && !isFerie && "bg-white hover:shadow-md"
             )}
           >
             <div className="flex justify-between items-center mb-1">
               <span className={cn(
                 "font-medium font-figtree",
                 isWeekend ? "text-gray-400" :
-                isFerie ? "text-gray-600" :
+                isFerie ? "text-blue-600" :
                 "text-gray-700"
               )}>
                 {i + 1}
               </span>
             </div>
             {isFerie && (
-              <div className="text-xs text-gray-500 font-figtree mb-1">
+              <div className="text-xs text-blue-500 font-figtree mb-1">
                 {joursFeries2025[dateString]}
               </div>
             )}
@@ -249,18 +255,18 @@ const CalendrierPaie = () => {
       <Card className="border-[#42D80F]/10">
         <CardContent className="p-6">
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-lg border border-gray-100">
               <div className="text-sm font-medium text-gray-600 font-figtree">Jours ouvrés</div>
               <div className="text-2xl font-bold text-[#42D80F] font-figtree">{workDays}</div>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-lg border border-gray-100">
               <div className="text-sm font-medium text-gray-600 font-figtree">Jours ouvrables</div>
               <div className="text-2xl font-bold text-[#42D80F] font-figtree">{workableDays}</div>
             </div>
           </div>
 
           <div className="grid grid-cols-7 gap-2">
-            {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map(day => (
+            {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
               <div key={day} className="font-medium text-center p-2 text-gray-500 font-figtree">
                 {day}
               </div>
