@@ -259,7 +259,8 @@ const CalendrierPaie = () => {
       isRetractation: values.isRetractation
     });
 
-    setIsDelayDialogOpen(false);
+    // Ne pas fermer la modal tout de suite
+    // setIsDelayDialogOpen(false);
   };
 
   const renderAnnualView = () => {
@@ -341,8 +342,6 @@ const CalendrierPaie = () => {
                       key={idx}
                       className={cn(
                         "text-gray-500 text-sm px-2 py-1 rounded-md",
-                        ea.type === 'taxe' && "bg-purple-50 text-purple-700",
-                        ea.type === 'formation' && "bg-blue-50 text-blue-700",
                         ea.type === 'dsn' && "bg-[#42D80F]/10 text-[#42D80F]",
                         ea.type === 'csa' && "bg-amber-100 text-amber-700",
                         ea.type === 'handicap' && "bg-purple-100 text-purple-700",
@@ -570,18 +569,51 @@ const CalendrierPaie = () => {
                 )}
               />
 
-              <div className="flex justify-end gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDelayDialogOpen(false)}
-                >
-                  Annuler
-                </Button>
-                <Button type="submit">
-                  Calculer
-                </Button>
-              </div>
+              <Button type="submit" className="w-full">
+                Calculer
+              </Button>
+
+              {calculatedDate && (
+                <div className="mt-6 space-y-4">
+                  <div className="p-4 rounded-lg bg-gray-50 space-y-2">
+                    <div className="font-medium text-gray-700">Résultat du calcul :</div>
+                    <div className="space-y-1">
+                      <div className="text-sm text-gray-600">
+                        Date de départ : {calculatedDate.startDate.toLocaleDateString('fr-FR', { dateStyle: 'long' })}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Délai : {calculatedDate.days} jour{calculatedDate.days > 1 ? 's' : ''} {calculatedDate.type}
+                        {calculatedDate.isRetractation ? ' (délai de rétractation)' : ''}
+                      </div>
+                      <div className="font-medium text-gray-900">
+                        Date d'échéance : {calculatedDate.date.toLocaleDateString('fr-FR', { dateStyle: 'long' })}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setIsDelayDialogOpen(false)}
+                    >
+                      Fermer
+                    </Button>
+                    <Button
+                      type="button"
+                      className="flex-1"
+                      onClick={() => {
+                        setIsDelayDialogOpen(false);
+                        setSelectedDate(calculatedDate.date);
+                        setViewMode('month');
+                      }}
+                    >
+                      Voir dans le calendrier
+                    </Button>
+                  </div>
+                </div>
+              )}
             </form>
           </Form>
         </DialogContent>
