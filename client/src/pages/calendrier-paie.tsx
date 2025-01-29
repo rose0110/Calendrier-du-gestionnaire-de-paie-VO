@@ -34,25 +34,13 @@ type Echeance = {
 const echeancesAnnuelles2025 = [
   {
     date: new Date(2025, 3, 5), // 5 avril 2025
-    description: 'CSA 2024 - DSN entreprises +50 salariés',
-    type: 'csa',
-    importance: 'high'
-  },
-  {
-    date: new Date(2025, 3, 15), // 15 avril 2025
-    description: 'CSA 2024 - DSN entreprises -50 salariés',
+    description: 'Déclaration CSA 2024',
     type: 'csa',
     importance: 'high'
   },
   {
     date: new Date(2025, 4, 5), // 5 mai 2025
-    description: 'DOETH 2024 - DSN entreprises +50 salariés',
-    type: 'handicap',
-    importance: 'high'
-  },
-  {
-    date: new Date(2025, 4, 15), // 15 mai 2025
-    description: 'DOETH 2024 - DSN entreprises -50 salariés',
+    description: 'DOETH 2024',
     type: 'handicap',
     importance: 'high'
   },
