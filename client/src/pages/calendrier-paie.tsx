@@ -258,9 +258,6 @@ const CalendrierPaie = () => {
       type: values.type,
       isRetractation: values.isRetractation
     });
-
-    // Ne pas fermer la modal tout de suite
-    // setIsDelayDialogOpen(false);
   };
 
   const renderAnnualView = () => {
@@ -432,7 +429,6 @@ const CalendrierPaie = () => {
     const isStartDate = calculatedDate &&
       calculatedDate.startDate.toDateString() === date.toDateString();
 
-    // Récupérer les échéances pour ce jour
     const echeancesDuJour = getEcheancesPaie(date.getFullYear(), date.getMonth())
       .filter(e => e.date === date.getDate());
 
@@ -444,7 +440,7 @@ const CalendrierPaie = () => {
               "p-3 rounded-lg min-h-24",
               "border border-gray-100",
               "transition-all duration-200",
-              isWeekend && "bg-[#42D80F]/20", // Fond vert plus visible pour les weekends
+              isWeekend && "bg-[#42D80F]/20",
               isFerie && "bg-gradient-to-br from-blue-50/80 to-white",
               isCalculatedDate && "ring-2 ring-purple-500 ring-offset-2",
               isStartDate && "ring-2 ring-green-500 ring-offset-2",
@@ -467,7 +463,7 @@ const CalendrierPaie = () => {
               </div>
             )}
             {echeancesDuJour.map((echeance, idx) => (
-              <div 
+              <div
                 key={idx}
                 className={cn(
                   "text-xs p-1.5 rounded mt-1",
@@ -582,7 +578,10 @@ const CalendrierPaie = () => {
                         Délai de rétractation
                       </FormLabel>
                       <FormDescription>
-                        La date d'échéance ne peut pas tomber un weekend ou un jour férié
+                        {form.watch("type") === "calendaire" ?
+                          "En mode calendaire avec délai de rétractation, si la date d'échéance tombe un weekend ou un jour férié, elle sera automatiquement reportée au prochain jour ouvré." :
+                          "La date d'échéance ne peut pas tomber un weekend ou un jour férié"
+                        }
                       </FormDescription>
                     </div>
                   </FormItem>
