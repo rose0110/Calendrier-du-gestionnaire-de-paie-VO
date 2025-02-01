@@ -457,12 +457,44 @@ const CalendrierPaie = () => {
         <CardContent className="p-6">
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-lg border border-gray-100">
-              <div className="text-sm font-medium text-gray-600 font-figtree">Jours ouvrés</div>
-              <div className="text-2xl font-bold text-[#42D80F] font-figtree">{workDays}</div>
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="text-sm font-medium text-gray-600 font-figtree">Jours ouvrés</div>
+                  <div className="text-2xl font-bold text-[#42D80F] font-figtree">{workDays}</div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    form.setValue("type", "ouvré");
+                    setShowCustomDaysDialog(true);
+                  }}
+                  className="text-[#42D80F] hover:text-[#42D80F] hover:bg-[#42D80F]/10"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Calcul personnalisé
+                </Button>
+              </div>
             </div>
             <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-lg border border-gray-100">
-              <div className="text-sm font-medium text-gray-600 font-figtree">Jours ouvrables</div>
-              <div className="text-2xl font-bold text-[#42D80F] font-figtree">{workableDays}</div>
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="text-sm font-medium text-gray-600 font-figtree">Jours ouvrables</div>
+                  <div className="text-2xl font-bold text-[#42D80F] font-figtree">{workableDays}</div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    form.setValue("type", "ouvrable");
+                    setShowCustomDaysDialog(true);
+                  }}
+                  className="text-[#42D80F] hover:text-[#42D80F] hover:bg-[#42D80F]/10"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Calcul personnalisé
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -751,8 +783,7 @@ const CalendrierPaie = () => {
             name="carenceDays"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Délai de carence avant maintien de salaire</FormLabel>
-                <FormControl>
+                <FormLabel>Délai de carence avant maintien de salaire</FormLabel>                <FormControl>
                   <Input
                     type="number"
                     min="0"
