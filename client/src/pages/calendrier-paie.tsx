@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
@@ -113,6 +113,7 @@ const formSchema = z.object({
 const CalendrierPaie = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('year');
+  const calculatedDayRef = useRef<HTMLDivElement>(null);
   const [calculatedDate, setCalculatedDate] = useState<{
     date: Date;
     startDate: Date;
@@ -131,6 +132,16 @@ const CalendrierPaie = () => {
       carenceDays: 0,
     },
   });
+
+  useEffect(() => {
+    if (calculatedDate && calculatedDayRef.current) {
+      calculatedDayRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    }
+  }, [calculatedDate]);
+
 
   const getNextWorkingDay = (date: Date) => {
     const nextDay = new Date(date);
@@ -456,6 +467,7 @@ const CalendrierPaie = () => {
       <ContextMenu>
         <ContextMenuTrigger>
           <div
+            ref={isCalculatedDate ? calculatedDayRef : undefined}
             className={cn(
               "p-3 rounded-lg min-h-24",
               "border border-gray-100",
@@ -504,7 +516,7 @@ const CalendrierPaie = () => {
                  {calculatedDate.carenceDays > 0 && ` avec ${calculatedDate.carenceDays} jours de carence`}
               </div>
             )}
-            {isStartDate && (
+             {isStartDate && (
               <div className="text-xs p-1.5 rounded mt-1 bg-green-100 text-green-700 font-medium">
                 Date de départ
               </div>
