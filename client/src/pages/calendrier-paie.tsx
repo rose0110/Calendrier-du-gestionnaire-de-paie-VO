@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Plus, X, MousePointerClick } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -114,6 +114,7 @@ const CalendrierPaie = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('year');
   const calculatedDayRef = useRef<HTMLDivElement>(null);
+  const [showHelpAlert, setShowHelpAlert] = useState(true);
   const [calculatedDate, setCalculatedDate] = useState<{
     date: Date;
     startDate: Date;
@@ -545,7 +546,7 @@ const CalendrierPaie = () => {
           <DialogHeader>
             <DialogTitle>Calculer un délai</DialogTitle>
             <DialogDescription>
-              {form.watch("delayType") === "subrogation" 
+              {form.watch("delayType") === "subrogation"
                 ? `Date de début d'arrêt : ${currentDate?.toLocaleDateString('fr-FR', { dateStyle: 'long' })}`
                 : `À partir du ${currentDate?.toLocaleDateString('fr-FR', { dateStyle: 'long' })}`
               }
@@ -559,7 +560,7 @@ const CalendrierPaie = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      {form.watch("delayType") === "subrogation" 
+                      {form.watch("delayType") === "subrogation"
                         ? "Nombre de jours jusqu'à fin de subrogation"
                         : "Nombre de jours"
                       }
@@ -679,8 +680,8 @@ const CalendrierPaie = () => {
                     <div className="font-medium text-gray-700">Résultat du calcul :</div>
                     <div className="space-y-1">
                       <div className="text-sm text-gray-600">
-                        {calculatedDate.delayType === 'subrogation' 
-                          ? "Date de début d'arrêt : " 
+                        {calculatedDate.delayType === 'subrogation'
+                          ? "Date de début d'arrêt : "
                           : "Date de départ : "
                         }
                         {calculatedDate.startDate.toLocaleDateString('fr-FR', { dateStyle: 'long' })}
@@ -754,37 +755,62 @@ const CalendrierPaie = () => {
             </button>
           )}
 
-          <div className="flex items-center gap-4">
+          <div className="flex-1 text-center">
             <h2 className="text-2xl font-bold text-gray-800">
               {viewMode === 'year'
                 ? "2025"
                 : `${selectedDate.toLocaleDateString('fr-FR', { month: 'long' })} 2025`
               }
             </h2>
-            {viewMode === 'month' && (
+          </div>
+
+          {viewMode === 'month' && (
+            <>
               <button
-                className="flex items-center gap-2 text-gray-600 hover:bg-[#42D80F]/10 p-2 rounded-lg transition-colors"
+                className="flex items-center gap-2 text-gray-600 hover:bg-[#42D80F]/10 p-2 rounded-lg transition-colors ml-auto mr-4"
                 onClick={() => setViewMode('year')}
               >
                 <Calendar className="h-5 w-5" />
                 Vue annuelle
               </button>
-            )}
-          </div>
 
-          {viewMode === 'month' && (
-            <button
-              className="flex items-center p-2 hover:bg-[#42D80F]/10 rounded-lg transition-colors"
-              onClick={() => {
-                const newDate = new Date(selectedDate);
-                newDate.setMonth(selectedDate.getMonth() + 1);
-                setSelectedDate(newDate);
-              }}
-            >
-              <ChevronRight className="h-6 w-6 text-gray-600" />
-            </button>
+              <button
+                className="flex items-center p-2 hover:bg-[#42D80F]/10 rounded-lg transition-colors"
+                onClick={() => {
+                  const newDate = new Date(selectedDate);
+                  newDate.setMonth(selectedDate.getMonth() + 1);
+                  setSelectedDate(newDate);
+                }}
+              >
+                <ChevronRight className="h-6 w-6 text-gray-600" />
+              </button>
+            </>
           )}
         </div>
+
+        {viewMode === 'month' && showHelpAlert && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed bottom-6 right-6 max-w-sm bg-white rounded-lg shadow-lg border border-[#42D80F]/20 p-4"
+          >
+            <button
+              onClick={() => setShowHelpAlert(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="flex items-start gap-3">
+              <MousePointerClick className="h-5 w-5 text-[#42D80F] flex-shrink-0 mt-1" />
+              <div>
+                <p className="text-sm text-gray-600">
+                  Pour calculer des délais, faites un clic droit sur une date dans le calendrier.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         <AnimatePresence mode="wait">
           {viewMode === 'year' ? renderAnnualView() : renderMonthView()}
