@@ -59,6 +59,11 @@ const joursFeries2025: JoursFeries = {
   '2025-12-25': 'Noël'
 };
 
+// Fonction pour normaliser une date (ignorer l'heure)
+const normalizeDate = (date: Date): string => {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
 type TypeEcheance = 'dsn' | 'declaration' | 'csa' | 'handicap' | 'soltea';
 
 type Echeance = {
@@ -128,7 +133,7 @@ const CalendrierPaie = () => {
     const nextDay = new Date(date);
     do {
       nextDay.setDate(nextDay.getDate() + 1);
-      const dateString = nextDay.toISOString().split('T')[0];
+      const dateString = normalizeDate(nextDay);
       const dayOfWeek = nextDay.getDay();
       if (dayOfWeek !== 0 && dayOfWeek !== 6 && !joursFeries2025[dateString]) {
         return nextDay;
@@ -138,7 +143,7 @@ const CalendrierPaie = () => {
 
   const calculateDSNDate = (year: number, month: number, day: number) => {
     const date = new Date(year, month, day);
-    const dateString = date.toISOString().split('T')[0];
+    const dateString = normalizeDate(date);
     const dayOfWeek = date.getDay();
 
     if (dayOfWeek === 0 || dayOfWeek === 6 || joursFeries2025[dateString]) {
@@ -155,7 +160,7 @@ const CalendrierPaie = () => {
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
       const dayOfWeek = date.getDay();
-      const dateString = date.toISOString().split('T')[0];
+      const dateString = normalizeDate(date);
 
       if (dayOfWeek !== 0) {
         workableDays++;
@@ -213,7 +218,7 @@ const CalendrierPaie = () => {
     if (type === 'calendaire') {
       result.setDate(result.getDate() + days);
       if (isRetractation) {
-        const dateString = result.toISOString().split('T')[0];
+        const dateString = normalizeDate(result);
         const dayOfWeek = result.getDay();
         if (dayOfWeek === 0 || dayOfWeek === 6 || joursFeries2025[dateString]) {
           return getNextWorkingDay(result);
@@ -224,7 +229,7 @@ const CalendrierPaie = () => {
 
     while (remainingDays > 0) {
       result.setDate(result.getDate() + 1);
-      const dateString = result.toISOString().split('T')[0];
+      const dateString = normalizeDate(result);
       const dayOfWeek = result.getDay();
 
       if (type === 'ouvré') {
@@ -420,14 +425,14 @@ const CalendrierPaie = () => {
   };
 
   const renderDay = (date: Date) => {
-    const dateString = date.toISOString().split('T')[0];
+    const dateString = normalizeDate(date);
     const dayOfWeek = date.getDay();
     const isWeekend = dayOfWeek === 6 || dayOfWeek === 0;
     const isFerie = joursFeries2025[dateString];
     const isCalculatedDate = calculatedDate &&
-      calculatedDate.date.toDateString() === date.toDateString();
+      normalizeDate(calculatedDate.date) === dateString;
     const isStartDate = calculatedDate &&
-      calculatedDate.startDate.toDateString() === date.toDateString();
+      normalizeDate(calculatedDate.startDate) === dateString;
 
     const echeancesDuJour = getEcheancesPaie(date.getFullYear(), date.getMonth())
       .filter(e => e.date === date.getDate());
