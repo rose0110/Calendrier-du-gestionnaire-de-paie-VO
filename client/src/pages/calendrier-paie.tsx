@@ -545,7 +545,10 @@ const CalendrierPaie = () => {
           <DialogHeader>
             <DialogTitle>Calculer un délai</DialogTitle>
             <DialogDescription>
-              À partir du {currentDate?.toLocaleDateString('fr-FR', { dateStyle: 'long' })}
+              {form.watch("delayType") === "subrogation" 
+                ? `Date de début d'arrêt : ${currentDate?.toLocaleDateString('fr-FR', { dateStyle: 'long' })}`
+                : `À partir du ${currentDate?.toLocaleDateString('fr-FR', { dateStyle: 'long' })}`
+              }
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -555,7 +558,12 @@ const CalendrierPaie = () => {
                 name="days"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nombre de jours</FormLabel>
+                    <FormLabel>
+                      {form.watch("delayType") === "subrogation" 
+                        ? "Nombre de jours jusqu'à fin de subrogation"
+                        : "Nombre de jours"
+                      }
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -621,7 +629,7 @@ const CalendrierPaie = () => {
                               <RadioGroupItem value="subrogation" />
                             </FormControl>
                             <FormLabel className="font-normal">
-                              Délai de subrogation
+                              Date de fin de subrogation
                             </FormLabel>
                           </FormItem>
                         </RadioGroup>
@@ -629,7 +637,7 @@ const CalendrierPaie = () => {
                       <FormDescription>
                         {field.value === "retractation"
                           ? "La date d'échéance sera automatiquement reportée au prochain jour ouvré si elle tombe un weekend ou un jour férié."
-                          : "Un délai de carence sera appliqué avant le calcul du délai de subrogation."}
+                          : "Calcul de la date de fin de subrogation à partir de la date de début d'arrêt."}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -643,7 +651,7 @@ const CalendrierPaie = () => {
                   name="carenceDays"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Délai de carence (jours)</FormLabel>
+                      <FormLabel>Délai de carence avant maintien de salaire</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -653,7 +661,7 @@ const CalendrierPaie = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Nombre de jours de carence avant le début du délai de subrogation
+                        Nombre de jours de carence avant le début du maintien de salaire
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -671,19 +679,29 @@ const CalendrierPaie = () => {
                     <div className="font-medium text-gray-700">Résultat du calcul :</div>
                     <div className="space-y-1">
                       <div className="text-sm text-gray-600">
-                        Date de départ : {calculatedDate.startDate.toLocaleDateString('fr-FR', { dateStyle: 'long' })}
+                        {calculatedDate.delayType === 'subrogation' 
+                          ? "Date de début d'arrêt : " 
+                          : "Date de départ : "
+                        }
+                        {calculatedDate.startDate.toLocaleDateString('fr-FR', { dateStyle: 'long' })}
                       </div>
                       {calculatedDate.carenceDays > 0 && (
                         <div className="text-sm text-gray-600">
-                          Délai de carence : {calculatedDate.carenceDays} jours
+                          Délai de carence avant maintien de salaire : {calculatedDate.carenceDays} jours
                         </div>
                       )}
                       <div className="text-sm text-gray-600">
-                        Délai : {calculatedDate.days} jour{calculatedDate.days > 1 ? 's' : ''} {calculatedDate.type}
-                        {calculatedDate.delayType === 'retractation' ? ' (délai de rétractation)' : ' (délai de subrogation)'}
+                        {calculatedDate.delayType === 'subrogation'
+                          ? `Durée de subrogation : ${calculatedDate.days} jour${calculatedDate.days > 1 ? 's' : ''} ${calculatedDate.type}`
+                          : `Délai : ${calculatedDate.days} jour${calculatedDate.days > 1 ? 's' : ''} ${calculatedDate.type}`
+                        }
                       </div>
                       <div className="font-medium text-gray-900">
-                        Date d'échéance : {calculatedDate.date.toLocaleDateString('fr-FR', { dateStyle: 'long' })}
+                        {calculatedDate.delayType === 'subrogation'
+                          ? "Date de fin de subrogation : "
+                          : "Date d'échéance : "
+                        }
+                        {calculatedDate.date.toLocaleDateString('fr-FR', { dateStyle: 'long' })}
                       </div>
                     </div>
                   </div>
