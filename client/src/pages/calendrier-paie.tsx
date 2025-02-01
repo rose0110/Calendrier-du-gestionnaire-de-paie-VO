@@ -9,7 +9,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import {
   Form,
@@ -28,7 +27,6 @@ import {
 } from "@/components/ui/context-menu"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -36,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -106,7 +104,10 @@ const formSchema = z.object({
   type: z.enum(['calendaire', 'ouvré', 'ouvrable'], {
     required_error: "Veuillez sélectionner un type de délai"
   }),
-  isRetractation: z.boolean().default(false),
+  delayType: z.enum(['retractation', 'subrogation'], {
+    required_error: "Veuillez sélectionner le type de calcul"
+  }),
+  carenceDays: z.number().min(0).optional(),
 });
 
 const CalendrierPaie = () => {
@@ -117,7 +118,8 @@ const CalendrierPaie = () => {
     startDate: Date;
     days: number;
     type: 'calendaire' | 'ouvré' | 'ouvrable';
-    isRetractation: boolean;
+    delayType: 'retractation' | 'subrogation';
+    carenceDays: number;
   } | null>(null);
   const [isDelayDialogOpen, setIsDelayDialogOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
@@ -126,7 +128,7 @@ const CalendrierPaie = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       days: 1,
-      isRetractation: false,
+      carenceDays: 0,
     },
   });
 
@@ -211,14 +213,24 @@ const CalendrierPaie = () => {
     startDate: Date,
     days: number,
     type: 'calendaire' | 'ouvré' | 'ouvrable',
-    isRetractation: boolean = false
+    delayType: 'retractation' | 'subrogation',
+    carenceDays: number = 0
   ) => {
+    let result = new Date(startDate);
+
+    if (delayType === 'subrogation' && carenceDays > 0) {
+      let carenceRemaining = carenceDays;
+      while (carenceRemaining > 0) {
+        result.setDate(result.getDate() + 1);
+        carenceRemaining--;
+      }
+    }
+
     let remainingDays = days;
-    const result = new Date(startDate);
 
     if (type === 'calendaire') {
       result.setDate(result.getDate() + days);
-      if (isRetractation) {
+      if (delayType === 'retractation') {
         const dateString = normalizeDate(result);
         const dayOfWeek = result.getDay();
         if (dayOfWeek === 0 || dayOfWeek === 6 || joursFeries2025[dateString]) {
@@ -254,7 +266,8 @@ const CalendrierPaie = () => {
       currentDate,
       values.days,
       values.type,
-      values.isRetractation
+      values.delayType,
+      values.carenceDays
     );
 
     setCalculatedDate({
@@ -262,7 +275,8 @@ const CalendrierPaie = () => {
       startDate: currentDate,
       days: values.days,
       type: values.type,
-      isRetractation: values.isRetractation
+      delayType: values.delayType,
+      carenceDays: values.carenceDays || 0
     });
   };
 
@@ -486,7 +500,8 @@ const CalendrierPaie = () => {
             {isCalculatedDate && (
               <div className="text-xs p-1.5 rounded mt-1 bg-purple-100 text-purple-700 font-medium">
                 Date calculée ({calculatedDate.days} jours {calculatedDate.type})
-                {calculatedDate.isRetractation && " (Rétractation)"}
+                {calculatedDate.delayType === 'retractation' ? " (Rétractation)" : " (Subrogation)"}
+                 {calculatedDate.carenceDays > 0 && ` avec ${calculatedDate.carenceDays} jours de carence`}
               </div>
             )}
             {isStartDate && (
@@ -571,23 +586,64 @@ const CalendrierPaie = () => {
               {form.watch("type") === "calendaire" && (
                 <FormField
                   control={form.control}
-                  name="isRetractation"
+                  name="delayType"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormItem className="space-y-3">
+                      <FormLabel>Type de calcul</FormLabel>
                       <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          className="flex flex-col space-y-1"
+                        >
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="retractation" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Délai de rétractation
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="subrogation" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Délai de subrogation
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormDescription>
+                        {field.value === "retractation"
+                          ? "La date d'échéance sera automatiquement reportée au prochain jour ouvré si elle tombe un weekend ou un jour férié."
+                          : "Un délai de carence sera appliqué avant le calcul du délai de subrogation."}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {form.watch("delayType") === "subrogation" && (
+                <FormField
+                  control={form.control}
+                  name="carenceDays"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Délai de carence (jours)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          {...field}
+                          onChange={e => field.onChange(parseInt(e.target.value))}
                         />
                       </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>
-                          Délai de rétractation
-                        </FormLabel>
-                        <FormDescription>
-                          En mode calendaire avec délai de rétractation, si la date d'échéance tombe un weekend ou un jour férié, elle sera automatiquement reportée au prochain jour ouvré.
-                        </FormDescription>
-                      </div>
+                      <FormDescription>
+                        Nombre de jours de carence avant le début du délai de subrogation
+                      </FormDescription>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -605,9 +661,14 @@ const CalendrierPaie = () => {
                       <div className="text-sm text-gray-600">
                         Date de départ : {calculatedDate.startDate.toLocaleDateString('fr-FR', { dateStyle: 'long' })}
                       </div>
+                      {calculatedDate.carenceDays > 0 && (
+                        <div className="text-sm text-gray-600">
+                          Délai de carence : {calculatedDate.carenceDays} jours
+                        </div>
+                      )}
                       <div className="text-sm text-gray-600">
                         Délai : {calculatedDate.days} jour{calculatedDate.days > 1 ? 's' : ''} {calculatedDate.type}
-                        {calculatedDate.isRetractation ? ' (délai de rétractation)' : ''}
+                        {calculatedDate.delayType === 'retractation' ? ' (délai de rétractation)' : ' (délai de subrogation)'}
                       </div>
                       <div className="font-medium text-gray-900">
                         Date d'échéance : {calculatedDate.date.toLocaleDateString('fr-FR', { dateStyle: 'long' })}
