@@ -598,77 +598,146 @@ const CalendrierPaie = () => {
       </ContextMenu>
     );
   };
-    const renderCustomDaysDialog = () => (
-    <Dialog open={showCustomDaysDialog} onOpenChange={setShowCustomDaysDialog}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {form.watch("type") === "ouvré" 
-              ? "Personnaliser les jours de repos" 
-              : "Personnaliser le jour non travaillé"}
-          </DialogTitle>
-        </DialogHeader>
+    const renderCustomDaysDialog = () => {
+      const [calculatedCustomDays, setCalculatedCustomDays] = useState<{
+        workDays?: number;
+        workableDays?: number;
+        type: 'ouvré' | 'ouvrable';
+      } | null>(null);
 
-        {form.watch("type") === "ouvré" ? (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Sélectionnez deux jours de repos</label>
-              <div className="grid grid-cols-2 gap-2">
-                {DAYS_OF_WEEK.map((day) => (
-                  <div
-                    key={day.value}
-                    className={cn(
-                      "p-2 rounded-md border cursor-pointer transition-colors",
-                      customRestDays.includes(day.value)
-                        ? "bg-[#42D80F]/10 border-[#42D80F] text-[#42D80F]"
-                        : "border-gray-200 hover:border-[#42D80F]/50"
-                    )}
-                    onClick={() => {
-                      if (customRestDays.includes(day.value)) {
-                        setCustomRestDays(customRestDays.filter(d => d !== day.value));
-                      } else if (customRestDays.length < 2) {
-                        setCustomRestDays([...customRestDays, day.value]);
-                      }
-                    }}
-                  >
-                    {day.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Sélectionnez le jour non travaillé</label>
-              <div className="grid grid-cols-2 gap-2">
-                {DAYS_OF_WEEK.map((day) => (
-                  <div
-                    key={day.value}
-                    className={cn(
-                      "p-2 rounded-md border cursor-pointer transition-colors",
-                      customNonWorkingDay === day.value
-                        ? "bg-[#42D80F]/10 border-[#42D80F] text-[#42D80F]"
-                        : "border-gray-200 hover:border-[#42D80F]/50"
-                    )}
-                    onClick={() => setCustomNonWorkingDay(day.value)}
-                  >
-                    {day.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+      const calculateCustomDays = () => {
+        const year = selectedDate.getFullYear();
+        const month = selectedDate.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        let workDays = 0;
+        let workableDays = 0;
 
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setShowCustomDaysDialog(false)}>
-            Fermer
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+        for (let day = 1; day <= daysInMonth; day++) {
+          const date = new Date(year, month, day);
+          const dayOfWeek = date.getDay();
+          const dateString = normalizeDate(date);
+
+          if (form.watch("type") === "ouvré") {
+            if (!customRestDays.includes(dayOfWeek) && !joursFeries2025[dateString]) {
+              workDays++;
+            }
+          } else if (form.watch("type") === "ouvrable") {
+            if (dayOfWeek !== customNonWorkingDay && !joursFeries2025[dateString]) {
+              workableDays++;
+            }
+          }
+        }
+
+        setCalculatedCustomDays({
+          workDays: form.watch("type") === "ouvré" ? workDays : undefined,
+          workableDays: form.watch("type") === "ouvrable" ? workableDays : undefined,
+          type: form.watch("type")
+        });
+      };
+
+      return (
+        <Dialog open={showCustomDaysDialog} onOpenChange={setShowCustomDaysDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {form.watch("type") === "ouvré" 
+                  ? "Personnaliser les jours de repos" 
+                  : "Personnaliser le jour non travaillé"}
+              </DialogTitle>
+            </DialogHeader>
+
+            {form.watch("type") === "ouvré" ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Sélectionnez deux jours de repos</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {DAYS_OF_WEEK.map((day) => (
+                      <div
+                        key={day.value}
+                        className={cn(
+                          "p-2 rounded-md border cursor-pointer transition-colors",
+                          customRestDays.includes(day.value)
+                            ? "bg-orange-100 border-orange-500 text-orange-700"
+                            : "border-gray-200 hover:border-orange-500/50"
+                        )}
+                        onClick={() => {
+                          if (customRestDays.includes(day.value)) {
+                            setCustomRestDays(customRestDays.filter(d => d !== day.value));
+                          } else if (customRestDays.length < 2) {
+                            setCustomRestDays([...customRestDays, day.value]);
+                          }
+                        }}
+                      >
+                        {day.label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Sélectionnez le jour non travaillé</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {DAYS_OF_WEEK.map((day) => (
+                      <div
+                        key={day.value}
+                        className={cn(
+                          "p-2 rounded-md border cursor-pointer transition-colors",
+                          customNonWorkingDay === day.value
+                            ? "bg-orange-100 border-orange-500 text-orange-700"
+                            : "border-gray-200 hover:border-orange-500/50"
+                        )}
+                        onClick={() => setCustomNonWorkingDay(day.value)}
+                      >
+                        {day.label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {calculatedCustomDays && (
+              <div className="mt-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <p className="text-sm font-medium text-orange-800">
+                  Pour {selectedDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}:
+                </p>
+                <p className="text-sm text-orange-700">
+                  {calculatedCustomDays.type === 'ouvré' 
+                    ? `Jours ouvrés personnalisés : ${calculatedCustomDays.workDays} jours`
+                    : `Jours ouvrables personnalisés : ${calculatedCustomDays.workableDays} jours`
+                  }
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 mt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setCalculatedCustomDays(null);
+                  setShowCustomDaysDialog(false);
+                }}
+              >
+                Fermer
+              </Button>
+              <Button
+                variant="default"
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+                onClick={calculateCustomDays}
+                disabled={
+                  (form.watch("type") === "ouvré" && customRestDays.length !== 2) ||
+                  (form.watch("type") === "ouvrable" && customNonWorkingDay === null)
+                }
+              >
+                Calculer
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      );
+    };
 
     const renderDelayForm = () => (
     <Form {...form}>
