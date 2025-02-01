@@ -541,7 +541,7 @@ const CalendrierPaie = () => {
   return (
     <>
       <Dialog open={isDelayDialogOpen} onOpenChange={setIsDelayDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Calculer un délai</DialogTitle>
             <DialogDescription>
@@ -674,7 +674,7 @@ const CalendrierPaie = () => {
               </Button>
 
               {calculatedDate && (
-                <div className="mt-6 space-y-4">
+                <div className="mt-6 space-y-4" id="calculation-results">
                   <div className="p-4 rounded-lg bg-gray-50 space-y-2">
                     <div className="font-medium text-gray-700">Résultat du calcul :</div>
                     <div className="space-y-1">
@@ -711,9 +711,14 @@ const CalendrierPaie = () => {
                       type="button"
                       variant="outline"
                       className="flex-1"
-                      onClick={() => setIsDelayDialogOpen(false)}
+                       onClick={() => {
+                        const resultsElement = document.getElementById('calculation-results');
+                        if (resultsElement) {
+                          resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }}
                     >
-                      Fermer
+                      Voir les résultats
                     </Button>
                     <Button
                       type="button"
