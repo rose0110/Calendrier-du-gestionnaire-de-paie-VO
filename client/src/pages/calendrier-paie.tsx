@@ -118,13 +118,13 @@ type DayOfWeek = {
 };
 
 const DAYS_OF_WEEK: DayOfWeek[] = [
-  { value: 0, label: 'Dimanche' },
   { value: 1, label: 'Lundi' },
   { value: 2, label: 'Mardi' },
   { value: 3, label: 'Mercredi' },
   { value: 4, label: 'Jeudi' },
   { value: 5, label: 'Vendredi' },
   { value: 6, label: 'Samedi' },
+  { value: 0, label: 'Dimanche' },
 ];
 
 const CalendrierPaie = () => {
@@ -145,8 +145,8 @@ const CalendrierPaie = () => {
   const [isDelayDialogOpen, setIsDelayDialogOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [showCustomDaysDialog, setShowCustomDaysDialog] = useState(false);
-  const [customRestDays, setCustomRestDays] = useState<number[]>([6, 0]); // Par défaut samedi, dimanche
-  const [customNonWorkingDay, setCustomNonWorkingDay] = useState<number>(0); // Par défaut dimanche
+  const [customRestDays, setCustomRestDays] = useState<number[]>([]);
+  const [customNonWorkingDay, setCustomNonWorkingDay] = useState<number | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -305,7 +305,7 @@ const CalendrierPaie = () => {
       values.delayType,
       values.carenceDays,
       values.type === 'ouvré' ? customRestDays : [6, 0],
-      values.type === 'ouvrable' ? customNonWorkingDay : 0
+      values.type === 'ouvrable' ? customNonWorkingDay || 0 : 0
     );
 
     setCalculatedDate({
@@ -469,7 +469,7 @@ const CalendrierPaie = () => {
                     form.setValue("type", "ouvré");
                     setShowCustomDaysDialog(true);
                   }}
-                  className="text-[#42D80F] hover:text-[#42D80F] hover:bg-[#42D80F]/10"
+                   className="text-orange-600 hover:text-orange-700 hover:bg-orange-100"
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   Calcul personnalisé
@@ -489,7 +489,7 @@ const CalendrierPaie = () => {
                     form.setValue("type", "ouvrable");
                     setShowCustomDaysDialog(true);
                   }}
-                  className="text-[#42D80F] hover:text-[#42D80F] hover:bg-[#42D80F]/10"
+                   className="text-orange-600 hover:text-orange-700 hover:bg-orange-100"
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   Calcul personnalisé
@@ -786,8 +786,7 @@ const CalendrierPaie = () => {
                 <FormLabel>Délai de carence avant maintien de salaire</FormLabel>                <FormControl>
                   <Input
                     type="number"
-                    min="0"
-                    {...field}
+                    min="0"                    {...field}
                     onChange={e => field.onChange(parseInt(e.target.value))}
                   />
                 </FormControl>
@@ -953,16 +952,16 @@ const CalendrierPaie = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed bottom-6 right-6 max-w-sm bg-white rounded-lg shadow-lg border border-[#42D80F]/20 p-4"
+            className="fixed bottom-6 right-6 max-w-sm bg-white rounded-lg shadow-lg border border-orange-200 p-4"
           >
             <button
               onClick={() => setShowHelpAlert(false)}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              className="absolute top-2 right-2 text-orange-500 hover:text-orange-700"
             >
               <X className="h-4 w-4" />
             </button>
             <div className="flex items-start gap-3">
-              <MousePointerClick className="h-5 w-5 text-[#42D80F] flex-shrink-0 mt-1" />
+              <MousePointerClick className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
               <div>
                 <p className="text-sm text-gray-600">
                   Pour calculer des délais, faites un clic droit sur une date dans le calendrier.
