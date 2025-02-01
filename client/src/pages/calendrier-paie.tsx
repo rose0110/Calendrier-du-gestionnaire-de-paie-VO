@@ -103,7 +103,9 @@ const DELAI_OPTIONS = [
 
 const formSchema = z.object({
   days: z.number().min(1, "Le nombre de jours doit être supérieur à 0"),
-  type: z.enum(['calendaire', 'ouvré', 'ouvrable']),
+  type: z.enum(['calendaire', 'ouvré', 'ouvrable'], {
+    required_error: "Veuillez sélectionner un type de délai"
+  }),
   isRetractation: z.boolean().default(false),
 });
 
@@ -124,7 +126,6 @@ const CalendrierPaie = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       days: 1,
-      type: 'calendaire',
       isRetractation: false,
     },
   });
@@ -549,11 +550,11 @@ const CalendrierPaie = () => {
                     <FormLabel>Type de délai</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez un type" />
+                          <SelectValue placeholder="Sélectionnez un type de délai" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -567,31 +568,30 @@ const CalendrierPaie = () => {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="isRetractation"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>
-                        Délai de rétractation
-                      </FormLabel>
-                      <FormDescription>
-                        {form.watch("type") === "calendaire" ?
-                          "En mode calendaire avec délai de rétractation, si la date d'échéance tombe un weekend ou un jour férié, elle sera automatiquement reportée au prochain jour ouvré." :
-                          "La date d'échéance ne peut pas tomber un weekend ou un jour férié"
-                        }
-                      </FormDescription>
-                    </div>
-                  </FormItem>
-                )}
-              />
+              {form.watch("type") === "calendaire" && (
+                <FormField
+                  control={form.control}
+                  name="isRetractation"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Délai de rétractation
+                        </FormLabel>
+                        <FormDescription>
+                          En mode calendaire avec délai de rétractation, si la date d'échéance tombe un weekend ou un jour férié, elle sera automatiquement reportée au prochain jour ouvré.
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <Button type="submit" className="w-full">
                 Calculer
