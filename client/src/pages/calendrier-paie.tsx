@@ -218,9 +218,7 @@ const CustomDaysDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange:
   );
 };
 
-const DelayDialog = ({ open, onOpenChange, currentDate, onCalculate }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+const DelayCalculator = ({ currentDate, onCalculate }: {
   currentDate: Date | null;
   onCalculate: (result: {
     date: Date;
@@ -251,9 +249,9 @@ const DelayDialog = ({ open, onOpenChange, currentDate, onCalculate }: {
       values.days,
       values.type,
       values.delayType,
-      values.carenceDays,
-      values.type === 'ouvré' ? customRestDays : [6, 0],
-      values.type === 'ouvrable' ? customNonWorkingDay || 0 : 0
+      values.carenceDays || 0,
+      values.type === 'ouvré' ? [6, 0] : [6, 0],
+      values.type === 'ouvrable' ? 0 : 0
     );
 
     onCalculate({
@@ -262,159 +260,138 @@ const DelayDialog = ({ open, onOpenChange, currentDate, onCalculate }: {
       days: values.days,
       type: values.type,
       delayType: values.delayType,
-      carenceDays: values.carenceDays || 0,
-      customRestDays: values.type === 'ouvré' ? customRestDays : undefined,
-      nonWorkingDay: values.type === 'ouvrable' ? customNonWorkingDay : undefined
+      carenceDays: values.carenceDays || 0
     });
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Calcul de délai</DialogTitle>
-          <DialogDescription>
-            Configurez les paramètres pour calculer le délai à partir du {currentDate?.toLocaleDateString('fr-FR')}
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmitDelay)} className="space-y-4">
+    <div className="space-y-4 p-4">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmitDelay)} className="space-y-4">
           <FormField
+            control={form.control}
+            name="days"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  {form.watch("delayType") === "subrogation"
+                    ? "Nombre de jours jusqu'à fin de subrogation"
+                    : "Nombre de jours"
+                  }
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="1"
+                    {...field}
+                    onChange={e => field.onChange(parseInt(e.target.value))}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Type de délai</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionnez un type de délai" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="calendaire">Calendaire</SelectItem>
+                    <SelectItem value="ouvré">Ouvré</SelectItem>
+                    <SelectItem value="ouvrable">Ouvrable</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {form.watch("type") === "calendaire" && (
+            <FormField
               control={form.control}
-              name="days"
+              name="delayType"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Type de calcul</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      className="flex flex-col space-y-1"
+                    >
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="retractation" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Délai de rétractation
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="subrogation" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Date de fin de subrogation
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormDescription>
+                    {field.value === "retractation"
+                      ? "La date d'échéance sera automatiquement reportée au prochain jour ouvré si elle tombe un weekend ou un jour férié."
+                      : "Calcul de la date de fin de subrogation à partir de la date de début d'arrêt."}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {form.watch("delayType") === "subrogation" && (
+            <FormField
+              control={form.control}
+              name="carenceDays"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    {form.watch("delayType") === "subrogation"
-                      ? "Nombre de jours jusqu'à fin de subrogation"
-                      : "Nombre de jours"
-                    }
-                  </FormLabel>
+                  <FormLabel>Délai de carence</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
-                      min="1"
+                      min="0"
                       {...field}
                       onChange={e => field.onChange(parseInt(e.target.value))}
                     />
                   </FormControl>
+                  <FormDescription>
+                    Nombre de jours de carence avant le début du maintien de salaire
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-    
-            <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Type de délai</FormLabel>
-                  <div className="flex gap-2">
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Sélectionnez un type de délai" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="calendaire">Calendaire</SelectItem>
-                        <SelectItem value="ouvré">Ouvré</SelectItem>
-                        <SelectItem value="ouvrable">Ouvrable</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {(field.value === 'ouvré' || field.value === 'ouvrable') && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setShowCustomDaysDialog(true)}
-                      >
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-    
-            {form.watch("type") === "calendaire" && (
-              <FormField
-                control={form.control}
-                name="delayType"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>Type de calcul</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        className="flex flex-col space-y-1"
-                      >
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="retractation" />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            Délai de rétractation
-                          </FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="subrogation" />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            Date de fin de subrogation
-                          </FormLabel>
-                        </FormItem>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormDescription>
-                      {field.value === "retractation"
-                        ? "La date d'échéance sera automatiquement reportée au prochain jour ouvré si elle tombe un weekend ou un jour férié."
-                        : "Calcul de la date de fin de subrogation à partir de la date de début d'arrêt."}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-    
-            {form.watch("delayType") === "subrogation" && (
-              <FormField
-                control={form.control}
-                name="carenceDays"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Délai de carence avant maintien de salaire</FormLabel>                <FormControl>
-                      <Input
-                        type="number"
-                        min="0"                    {...field}
-                        onChange={e => field.onChange(parseInt(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Nombre de jours de carence avant le début du maintien de salaire
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-    
-            <Button type="submit" className="w-full">
-              Calculer
-            </Button>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+          )}
+
+          <Button type="submit" className="w-full">
+            Calculer
+          </Button>
+        </form>
+      </Form>
+    </div>
   );
 };
-
 
 const CalendrierPaie = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -431,7 +408,6 @@ const CalendrierPaie = () => {
     customRestDays?: number[];
     nonWorkingDay?: number;
   } | null>(null);
-  const [isDelayDialogOpen, setIsDelayDialogOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [showCustomDaysDialog, setShowCustomDaysDialog] = useState(false);
   const [customRestDays, setCustomRestDays] = useState<number[]>([]);
@@ -439,6 +415,7 @@ const CalendrierPaie = () => {
   const [heuresCalcul, setHeuresCalcul] = useState<HeuresCalcul | null>(null);
   const [selectedFeature, setSelectedFeature] = useState<SelectedFeature>(null);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
+  const [showDelayPanel, setShowDelayPanel] = useState(false);
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -672,7 +649,7 @@ const CalendrierPaie = () => {
     nonWorkingDay?: number;
   }) => {
     setCalculatedDate(result);
-    setIsDelayDialogOpen(false);
+    setShowDelayPanel(false);
   };
 
 
@@ -1287,7 +1264,7 @@ const renderFeatureModal = () => {
           <ContextMenuItem
             onClick={() => {
               setCurrentDate(date);
-              setIsDelayDialogOpen(true);
+              setShowDelayPanel(true);
             }}
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -1343,12 +1320,28 @@ const renderFeatureModal = () => {
 
   return (
     <>
-       <DelayDialog
-        open={isDelayDialogOpen}
-        onOpenChange={setIsDelayDialogOpen}
-        currentDate={currentDate}
-        onCalculate={handleCalculation}
-      />
+      <Sheet open={showDelayPanel} onOpenChange={setShowDelayPanel}>
+        <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+          <div className="h-full flex flex-col">
+            <div className="flex-none py-6">
+              <h2 className="text-lg font-semibold">Calcul de délai</h2>
+              <p className="text-sm text-muted-foreground">
+                Calculez un délai à partir du {currentDate?.toLocaleDateString('fr-FR')}
+              </p>
+            </div>
+            <div className="flex-grow overflow-y-auto">
+              <DelayCalculator
+                currentDate={currentDate}
+                onCalculate={(result) => {
+                  setCalculatedDate(result);
+                  setShowDelayPanel(false);
+                }}
+              />
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {renderCustomDaysDialog()}
 
       <div className="max-w-6xl mx-auto p-6 font-figtree">
