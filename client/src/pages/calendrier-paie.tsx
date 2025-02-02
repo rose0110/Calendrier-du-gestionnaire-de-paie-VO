@@ -13,18 +13,32 @@ import {
   CalendarDays,
   Timer,
   UserMinus,
-  GraduationCap
+  GraduationCap,
+  ChevronDown
 } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   Form,
   FormControl,
@@ -40,21 +54,6 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Checkbox } from "@/components/ui/checkbox";
 
 
 type JoursFeries = {
@@ -174,18 +173,34 @@ type HeuresCalcul = {
 
 type SelectedFeature = 'heures' | 'plafond' | 'cp' | 'sup' | 'absences' | 'stagiaire' | null;
 
-const CustomDaysDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => {
-  const [customRestDays, setCustomRestDays] = useState<number[]>([]);
+const CustomDaysSection = ({ 
+  customRestDays, 
+  setCustomRestDays 
+}: { 
+  customRestDays: number[],
+  setCustomRestDays: (days: number[]) => void 
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Configuration des jours de repos</DialogTitle>
-          <DialogDescription>
-            Sélectionnez les jours de repos hebdomadaires pour votre calcul
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
+    <Collapsible
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      className="w-full space-y-2"
+    >
+      <div className="flex items-center justify-between space-x-4 px-4">
+        <h4 className="text-sm font-semibold">
+          Configuration des jours de repos
+        </h4>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" size="sm" className="w-9 p-0">
+            <ChevronDown className="h-4 w-4" />
+            <span className="sr-only">Toggle</span>
+          </Button>
+        </CollapsibleTrigger>
+      </div>
+      <CollapsibleContent className="space-y-2">
+        <div className="rounded-md border px-4 py-3 font-mono text-sm">
           <div className="grid grid-cols-2 gap-4">
             {DAYS_OF_WEEK.map((day) => (
               <div key={day.value} className="flex items-center space-x-2">
@@ -209,12 +224,9 @@ const CustomDaysDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange:
               </div>
             ))}
           </div>
-          <div className="flex justify-end">
-            <Button onClick={() => onOpenChange(false)}>Fermer</Button>
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </CollapsibleContent>
+    </Collapsible>
   );
 };
 
@@ -805,7 +817,7 @@ const renderFeatureModal = () => {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   {/* Horaires habituels */}
                   <div className="space-y-2">
-                      <label className="text-sm font-medium">Horaires habituels par jour</label>
+                      <label className="text-sm font-medium">Horaires habituels par jour                      </label>
                       <div className="grid grid-cols-7 gap-2">
                           {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((jour, index) => {
                               const jourIndex = (index + 1) % 7; // Pour que dimanche soit 0
@@ -1337,12 +1349,16 @@ const renderFeatureModal = () => {
                   setShowDelayPanel(false);
                 }}
               />
+              <CustomDaysSection
+                customRestDays={customRestDays}
+                setCustomRestDays={setCustomRestDays}
+              />
             </div>
           </div>
         </SheetContent>
       </Sheet>
 
-      {renderCustomDaysDialog()}
+      {/*{renderCustomDaysDialog()} */}
 
       <div className="max-w-6xl mx-auto p-6 font-figtree">
         <div className="flex justify-between items-center mb-8">
