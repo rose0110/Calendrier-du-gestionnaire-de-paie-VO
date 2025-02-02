@@ -581,7 +581,51 @@ const CalendrierPaie = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Fonctionnalités</h3>
 
-              {/* Calcul des heures réelles */}
+              {/* Menu des fonctionnalités */}
+              <div className="space-y-2">
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start"
+                  onClick={() => {}}
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Calcul des heures réelles
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start"
+                  onClick={() => {}}
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Plafond sécurité sociale
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start"
+                  onClick={() => {}}
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Prorata CP
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start"
+                  onClick={() => {}}
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Heures sup./complémentaires
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start"
+                  onClick={() => {}}
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Calcul des absences
+                </Button>
+              </div>
+
+              {/* Contenu existant pour le calcul des heures réelles */}
               <div className="space-y-4">
                 <h4 className="font-medium flex items-center gap-2">
                   <Clock className="h-4 w-4" />
@@ -727,8 +771,7 @@ const CalendrierPaie = () => {
                 {calculatedDate.delayType === 'retractation' ? " (Rétractation)" : " (Subrogation)"}
                 {calculatedDate.carenceDays > 0 && ` avec ${calculatedDate.carenceDays} jours de carence`}
               </div>
-            )}
-            {isStartDate && (
+            )}{isStartDate && (
               <div className="text-xs p-1.5 rounded mt-1 bg-green-100 text-green-700 font-medium">
                 Date de départ
               </div>
