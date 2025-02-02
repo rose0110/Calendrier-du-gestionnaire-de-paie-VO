@@ -128,8 +128,12 @@ const formSchema = z.object({
   carenceDays: z.number().min(0).optional(),
   customRestDays: z.array(z.number()).optional(),
   nonWorkingDay: z.number().optional(),
-  horaireNormal: z.number().optional(),
-  ferieTravaille: z.record(z.boolean()).optional(),
+  horaireNormal: z.number().min(0, "L'horaire doit être positif"),
+  absences: z.array(z.object({
+    date: z.date(),
+    heures: z.number().min(0)
+  })).default([]),
+  feriesTravailles: z.record(z.boolean()).default({}),
 });
 
 type DayOfWeek = {
@@ -150,6 +154,7 @@ const DAYS_OF_WEEK: DayOfWeek[] = [
 type HeuresCalcul = {
   horaireNormal: number;
   feriesTravailles: { [key: string]: boolean };
+  absences: { date: Date; heures: number }[];
   heuresReelles: number;
   heuresPayees: number;
 };
@@ -243,8 +248,11 @@ const CalendrierPaie = () => {
     return { workDays, workableDays };
   };
 
-    // Fonction pour calculer les heures réelles
-  const calculerHeuresReelles = (horaireNormal: number, feriesTravailles: { [key: string]: boolean }) => {
+  const calculerHeuresReelles = (
+    horaireNormal: number,
+    feriesTravailles: { [key: string]: boolean },
+    absences: { date: Date; heures: number }[]
+  ) => {
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth();
     const joursDansMois = new Date(year, month + 1, 0).getDate();
@@ -255,17 +263,27 @@ const CalendrierPaie = () => {
       const date = new Date(year, month, jour);
       const dateString = normalizeDate(date);
       const jourSemaine = date.getDay();
-      const estFerie = joursFeries2025[dateString];
 
-      if (jourSemaine !== 0 && jourSemaine !== 6) { // Jours de semaine
-        if (estFerie) {
+      // Ne compte que les jours de semaine (lundi-vendredi)
+      if (jourSemaine > 0 && jourSemaine < 6) {
+        const estFerie = joursFeries2025[dateString];
+        const absence = absences.find(a => normalizeDate(a.date) === dateString);
+
+        if (absence) {
+          // Jour avec absence
+          const heuresTravaillees = Math.max(0, horaireNormal - absence.heures);
+          heuresReelles += heuresTravaillees;
+          heuresPayees += heuresTravaillees;
+        } else if (estFerie) {
+          // Jour férié
           if (feriesTravailles[dateString]) {
             heuresReelles += horaireNormal;
             heuresPayees += horaireNormal;
           } else {
-            heuresPayees += horaireNormal;
+            heuresPayees += horaireNormal; // Payé mais pas travaillé
           }
         } else {
+          // Jour normal
           heuresReelles += horaireNormal;
           heuresPayees += horaireNormal;
         }
@@ -275,12 +293,12 @@ const CalendrierPaie = () => {
     return { heuresReelles, heuresPayees };
   };
 
-    // Fonction pour gérer le formulaire des heures
   const handleHeuresSubmit = (horaireNormal: number, feriesTravailles: { [key: string]: boolean }) => {
-    const { heuresReelles, heuresPayees } = calculerHeuresReelles(horaireNormal, feriesTravailles);
+    const { heuresReelles, heuresPayees } = calculerHeuresReelles(horaireNormal, feriesTravailles, []);
     setHeuresCalcul({
       horaireNormal,
       feriesTravailles,
+      absences: [],
       heuresReelles,
       heuresPayees
     });
@@ -513,13 +531,160 @@ const CalendrierPaie = () => {
               {selectedFeature === 'absences' && "Calcul des absences"}
               {selectedFeature === 'stagiaire' && "Gratification stagiaire"}
             </DialogTitle>
+            <DialogDescription>
+              {selectedFeature === 'heures' && "Calculez les heures réelles travaillées en tenant compte des absences et jours fériés"}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {/* Le contenu du modal sera différent selon la fonctionnalité sélectionnée */}
             {selectedFeature === 'heures' && (
-              // Contenu existant pour le calcul des heures réelles
-              <div>Calcul des heures réelles</div>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit((data) => {
+                  const { heuresReelles, heuresPayees } = calculerHeuresReelles(
+                    data.horaireNormal,
+                    data.feriesTravailles || {},
+                    data.absences || []
+                  );
+                  setHeuresCalcul({
+                    horaireNormal: data.horaireNormal,
+                    feriesTravailles: data.feriesTravailles || {},
+                    absences: data.absences || [],
+                    heuresReelles,
+                    heuresPayees
+                  });
+                })} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="horaireNormal"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Horaire journalier habituel (Lundi-Vendredi)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.5"
+                            placeholder="7.00"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Saisissez l'horaire journalier normal du salarié
+                        </FormDescription>
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Absences */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Absences du mois</label>
+                    <div className="space-y-2">
+                      {form.watch("absences", []).map((absence, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <Input
+                            type="date"
+                            value={absence.date.toISOString().split('T')[0]}
+                            onChange={(e) => {
+                              const newAbsences = [...form.watch("absences")];
+                              newAbsences[index].date = new Date(e.target.value);
+                              form.setValue("absences", newAbsences);
+                            }}
+                          />
+                          <Input
+                            type="number"
+                            step="0.5"
+                            placeholder="Heures"
+                            value={absence.heures}
+                            onChange={(e) => {
+                              const newAbsences = [...form.watch("absences")];
+                              newAbsences[index].heures = parseFloat(e.target.value);
+                              form.setValue("absences", newAbsences);
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const newAbsences = form.watch("absences").filter((_, i) => i !== index);
+                              form.setValue("absences", newAbsences);
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          const newAbsences = [...form.watch("absences", [])];
+                          newAbsences.push({ date: new Date(), heures: 0 });
+                          form.setValue("absences", newAbsences);
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Ajouter une absence
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Jours fériés */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Jours fériés du mois</label>
+                    {Object.entries(joursFeries2025)
+                      .filter(([date]) => date.startsWith(`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`))
+                      .map(([date, label]) => (
+                        <FormField
+                          key={date}
+                          control={form.control}
+                          name={`feriesTravailles.${date}`}
+                          render={({ field }) => (
+                            <FormItem className="flex items-center gap-2">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <FormLabel className="text-sm">
+                                {label} travaillé ?
+                              </FormLabel>
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+                  </div>
+
+                  <Button type="submit" className="w-full">
+                    Calculer les heures
+                  </Button>
+                </form>
+              </Form>
             )}
+
+            {/* Affichage des résultats */}
+            {selectedFeature === 'heures' && heuresCalcul && (
+              <div className="p-4 bg-gray-50 rounded-lg space-y-2">
+                <div className="text-sm font-medium">Résultats du mois :</div>
+                <div className="text-sm space-y-1">
+                  <div>Horaire habituel : {heuresCalcul.horaireNormal}h/jour</div>
+                  <div>Heures réelles travaillées : {heuresCalcul.heuresReelles.toFixed(2)}h</div>
+                  <div>Heures payées : {heuresCalcul.heuresPayees.toFixed(2)}h</div>
+                  {heuresCalcul.absences.length > 0 && (
+                    <div>
+                      <div className="font-medium mt-2">Absences :</div>
+                      {heuresCalcul.absences.map((absence, index) => (
+                        <div key={index}>
+                          {absence.date.toLocaleDateString('fr-FR')} : {absence.heures}h
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+
             {selectedFeature === 'plafond' && (
               <div>Calcul du plafond de la sécurité sociale</div>
             )}
