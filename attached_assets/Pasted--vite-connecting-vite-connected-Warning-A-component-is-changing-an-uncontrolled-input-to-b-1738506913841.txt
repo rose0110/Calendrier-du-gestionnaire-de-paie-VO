@@ -1,0 +1,26 @@
+[vite] connecting...
+[vite] connected.
+Warning: A component is changing an uncontrolled input to be controlled. This is likely caused by the value changing from undefined to a defined value, which should not happen. Decide between using a controlled or uncontrolled input element for the lifetime of the component. More info: https://reactjs.org/link/controlled-components
+    at input
+    at _c (https://15aa3e5c-82ca-426d-847c-5d6006ecf207-00-39f8ejezph6hr.worf.replit.dev/src/components/ui/input.tsx:20:11)
+    at https://15aa3e5c-82ca-426d-847c-5d6006ecf207-00-39f8ejezph6hr.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4WIT4MX7.js?v=2aa2ec19:52:11
+    at https://15aa3e5c-82ca-426d-847c-5d6006ecf207-00-39f8ejezph6hr.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4WIT4MX7.js?v=2aa2ec19:33:11
+    at https://15aa3e5c-82ca-426d-847c-5d6006ecf207-00-39f8ejezph6hr.worf.replit.dev/src/components/ui/form.tsx:127:9
+    at div
+    at https://15aa3e5c-82ca-426d-847c-5d6006ecf207-00-39f8ejezph6hr.worf.replit.dev/src/components/ui/form.tsx:71:6
+    at Controller (https://15aa3e5c-82ca-426d-847c-5d6006ecf207-00-39f8ejezph6hr.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RBMNEPGM.js?v=2aa2ec19:313:35)
+    at FormField (https://15aa3e5c-82ca-426d-847c-5d6006ecf207-00-39f8ejezph6hr.worf.replit.dev/src/components/ui/form.tsx:32:6)
+    at div
+    at div
+    at form
+    at FormProvider (https://15aa3e5c-82ca-426d-847c-5d6006ecf207-00-39f8ejezph6hr.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RBMNEPGM.js?v=2aa2ec19:102:11)
+    at div
+    at _c (https://15aa3e5c-82ca-426d-847c-5d6006ecf207-00-39f8ejezph6hr.worf.replit.dev/src/components/ui/card.tsx:20:11)
+    at div
+    at div
+    at CalendrierPaie (https://15aa3e5c-82ca-426d-847c-5d6006ecf207-00-39f8ejezph6hr.worf.replit.dev/src/pages/calendrier-paie.tsx:134:43)
+    at Route (https://15aa3e5c-82ca-426d-847c-5d6006ecf207-00-39f8ejezph6hr.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2aa2ec19:323:16)
+    at Switch (https://15aa3e5c-82ca-426d-847c-5d6006ecf207-00-39f8ejezph6hr.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2aa2ec19:379:17)
+    at Router
+    at QueryClientProvider (https://15aa3e5c-82ca-426d-847c-5d6006ecf207-00-39f8ejezph6hr.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=2aa2ec19:2805:3)
+    at App

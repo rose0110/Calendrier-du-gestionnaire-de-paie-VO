@@ -202,9 +202,21 @@ const CalendrierPaie = () => {
     defaultValues: {
       days: 1,
       carenceDays: 0,
-      horairesSemaine: {},
+      horairesSemaine: {
+        0: 0, // Dimanche
+        1: 0, // Lundi
+        2: 0, // Mardi
+        3: 0, // Mercredi
+        4: 0, // Jeudi
+        5: 0, // Vendredi
+        6: 0  // Samedi
+      },
       absences: [],
-      feriesTravailles: {},
+      feriesTravailles: Object.fromEntries(
+        Object.keys(joursFeries2025)
+          .filter(date => date.startsWith(`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`))
+          .map(date => [date, { travaille: false, heures: 0 }])
+      ),
     },
   });
 
