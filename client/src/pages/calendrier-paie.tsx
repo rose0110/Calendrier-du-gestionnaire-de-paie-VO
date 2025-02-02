@@ -574,7 +574,7 @@ const CalendrierPaie = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {selectedFeature === 'heures' && "Calcul des heures réelles"}
+              {selectedFeature === 'heures' && "Calcul des heures travaillées"}
               {selectedFeature === 'plafond' && "Plafond sécurité sociale"}
               {selectedFeature === 'cp' && "Prorata CP"}
               {selectedFeature === 'sup' && "Heures sup./complémentaires"}
@@ -583,6 +583,11 @@ const CalendrierPaie = () => {
             </DialogTitle>
             <DialogDescription>
               {selectedFeature === 'heures' && "Calculez les heures réelles travaillées en tenant compte des absences et jours fériés"}
+              {selectedFeature === 'plafond' && "Calculez le plafond de la sécurité sociale selon votre situation"}
+              {selectedFeature === 'cp' && "Calculez le prorata des congés payés"}
+              {selectedFeature === 'sup' && "Calculez vos heures supplémentaires ou complémentaires"}
+              {selectedFeature === 'absences' && "Gérez et calculez les absences"}
+              {selectedFeature === 'stagiaire' && "Calculez la gratification de stage"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
