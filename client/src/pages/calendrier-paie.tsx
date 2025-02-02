@@ -204,6 +204,17 @@ const CalendrierPaie = () => {
     defaultValues: {
       days: 1,
       carenceDays: 0,
+      horairesSemaine: {
+        0: 0, // Dimanche
+        1: 0, // Lundi
+        2: 0, // Mardi
+        3: 0, // Mercredi
+        4: 0, // Jeudi
+        5: 0, // Vendredi
+        6: 0, // Samedi
+      },
+      absences: [],
+      feriesTravailles: {}
     },
   });
 
@@ -265,7 +276,7 @@ const CalendrierPaie = () => {
     horairesSemaine: { [key: string]: number },
     feriesTravailles: { [key: string]: { travaille: boolean, heures?: number } },
     absences: { date: Date; heures: number }[]
-) => {
+  ) => {
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth();
     const joursDansMois = new Date(year, month + 1, 0).getDate();
@@ -433,6 +444,26 @@ const CalendrierPaie = () => {
     });
   };
 
+    const onSubmit = (data: z.infer<typeof formSchema>) => {
+    const horairesSemaine = data.horairesSemaine || {};
+    const feriesTravailles = data.feriesTravailles || {};
+    const absences = data.absences || [];
+
+    const { heuresReelles, heuresPayees } = calculerHeuresReelles(
+      horairesSemaine,
+      feriesTravailles,
+      absences
+    );
+
+    setHeuresCalcul({
+      horaireNormal: 0,
+      feriesTravailles,
+      absences,
+      heuresReelles,
+      heuresPayees
+    });
+  };
+
   const renderAnnualView = () => {
     const months = Array.from({ length: 12 }, (_, i) => {
       const date = new Date(selectedDate.getFullYear(), i, 1);
@@ -557,20 +588,7 @@ const CalendrierPaie = () => {
           <div className="space-y-4">
             {selectedFeature === 'heures' && (
               <Form {...form}>
-                <form onSubmit={form.handleSubmit((data) => {
-                    const { heuresReelles, heuresPayees } = calculerHeuresReelles(
-                        data.horairesSemaine,
-                        data.feriesTravailles || {},
-                        data.absences || []
-                    );
-                    setHeuresCalcul({
-                        horaireNormal: 0, // Pas utilisé avec le nouveau format, à supprimer ?
-                        feriesTravailles: data.feriesTravailles || {},
-                        absences: data.absences || [],
-                        heuresReelles,
-                        heuresPayees
-                    });
-                })} className="space-y-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     {/* Horaires habituels */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Horaires habituels par jour</label>
