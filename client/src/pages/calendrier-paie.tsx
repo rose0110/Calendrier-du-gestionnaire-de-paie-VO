@@ -550,268 +550,325 @@ const CalendrierPaie = () => {
     );
   };
 
-    const renderMonthView = () => {
-      const year = selectedDate.getFullYear();
-      const month = selectedDate.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const firstDay = new Date(year, month, 1).getDay();
-      const firstDayOfMonth = firstDay === 0 ? 6 : firstDay - 1;
-      const { workDays, workableDays } = calculateWorkDays(year, month);
-      const echeances = getEcheancesPaie(year, month);
-  
-      return (
-        <div className="space-y-6">
-          {/* Section du calculateur d'heures */}
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Calculateur d'heures</h3>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit((data) => {
-                const { heuresReelles, heuresPayees } = calculerHeuresReelles(
-                  data.horairesSemaine,
-                  data.feriesTravailles || {},
-                  data.absences || []
-                );
-                setHeuresCalcul({
-                  horaireNormal: 0,
-                  feriesTravailles: data.feriesTravailles || {},
-                  absences: data.absences || [],
-                  heuresReelles,
-                  heuresPayees
-                });
-              })} className="space-y-4">
-                {/* Horaires habituels */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Horaires habituels par jour</label>
-                  <div className="grid grid-cols-7 gap-2">
-                    {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((jour, index) => {
-                      const jourIndex = (index + 1) % 7;
-                      return (
-                        <FormField
-                          key={jour}
-                          control={form.control}
-                          name={`horairesSemaine.${jourIndex}`}
-                          render={({ field }) => (
-                            <FormItem className="space-y-1">
-                              <FormLabel className="text-xs text-center block">{jour}</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  step="0.5"
-                                  placeholder="0"
-                                  className="text-center h-8 px-1"
-                                  {...field}
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-  
-                {/* Absences */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Absences du mois</label>
-                  <div className="space-y-2">
-                    {form.watch("absences", []).map((absence, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <Input
-                          type="date"
-                          value={absence.date.toISOString().split('T')[0]}
-                          min={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`}
-                          max={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).getDate()).padStart(2, '0')}`}
-                          onChange={(e) => {
-                            const newDate = new Date(e.target.value);
-                            const newAbsences = [...form.watch("absences")];
-                            newAbsences[index].date = newDate;
-                            const jourSemaine = newDate.getDay();
-                            const heuresHabituelles = form.watch(`horairesSemaine.${jourSemaine}`) || 0;
-                            newAbsences[index].heures = heuresHabituelles;
-                            form.setValue("absences", newAbsences);
-                          }}
-                        />
-                        <Input
-                          type="number"
-                          step="0.5"
-                          placeholder="Heures"
-                          value={absence.heures}
-                          onChange={(e) => {
-                            const newAbsences = [...form.watch("absences")];
-                            newAbsences[index].heures = parseFloat(e.target.value) || 0;
-                            form.setValue("absences", newAbsences);
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            const newAbsences = form.watch("absences").filter((_, i) => i !== index);
-                            form.setValue("absences", newAbsences);
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
+  // Ajout du menu des fonctionnalités en haut du calendrier
+const renderFeatureMenu = () => {
+  return (
+    <div className="mb-6 flex flex-wrap gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        className="flex items-center gap-2"
+        onClick={() => setSelectedFeature('plafond')}
+      >
+        <Calculator className="h-4 w-4" />
+        Plafond SS
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="flex items-center gap-2"
+        onClick={() => setSelectedFeature('cp')}
+      >
+        <CalendarDays className="h-4 w-4" />
+        Prorata CP
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="flex items-center gap-2"
+        onClick={() => setSelectedFeature('sup')}
+      >
+        <Clock className="h-4 w-4" />
+        Heures sup.
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="flex items-center gap-2"
+        onClick={() => setSelectedFeature('absences')}
+      >
+        <UserMinus className="h-4 w-4" />
+        Absences
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="flex items-center gap-2"
+        onClick={() => setSelectedFeature('stagiaire')}
+      >
+        <GraduationCap className="h-4 w-4" />
+        Stagiaire
+      </Button>
+    </div>
+  );
+};
+
+// Dans le render principal, ajoutez le menu des fonctionnalités avant le calendrier
+const renderMonthView = () => {
+  const year = selectedDate.getFullYear();
+  const month = selectedDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const firstDayOfMonth = firstDay === 0 ? 6 : firstDay - 1;
+  const { workDays, workableDays } = calculateWorkDays(year, month);
+  const echeances = getEcheancesPaie(year, month);
+
+  return (
+    <div className="space-y-6">
+      {/* Menu des fonctionnalités */}
+      {renderFeatureMenu()}
+
+      {/* Section du calculateur d'heures */}
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Calculateur d'heures</h3>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit((data) => {
+            const { heuresReelles, heuresPayees } = calculerHeuresReelles(
+              data.horairesSemaine,
+              data.feriesTravailles || {},
+              data.absences || []
+            );
+            setHeuresCalcul({
+              horaireNormal: 0,
+              feriesTravailles: data.feriesTravailles || {},
+              absences: data.absences || [],
+              heuresReelles,
+              heuresPayees
+            });
+          })} className="space-y-4">
+            {/* Horaires habituels */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Horaires habituels par jour</label>
+              <div className="grid grid-cols-7 gap-2">
+                {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((jour, index) => {
+                  const jourIndex = (index + 1) % 7;
+                  return (
+                    <FormField
+                      key={jour}
+                      control={form.control}
+                      name={`horairesSemaine.${jourIndex}`}
+                      render={({ field }) => (
+                        <FormItem className="space-y-1">
+                          <FormLabel className="text-xs text-center block">{jour}</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              placeholder="0"
+                              className="text-center h-8 px-1"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Absences */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Absences du mois</label>
+              <div className="space-y-2">
+                {form.watch("absences", []).map((absence, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      type="date"
+                      value={absence.date.toISOString().split('T')[0]}
+                      min={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`}
+                      max={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).getDate()).padStart(2, '0')}`}
+                      onChange={(e) => {
+                        const newDate = new Date(e.target.value);
+                        const newAbsences = [...form.watch("absences")];
+                        newAbsences[index].date = newDate;
+                        const jourSemaine = newDate.getDay();
+                        const heuresHabituelles = form.watch(`horairesSemaine.${jourSemaine}`) || 0;
+                        newAbsences[index].heures = heuresHabituelles;
+                        form.setValue("absences", newAbsences);
+                      }}
+                    />
+                    <Input
+                      type="number"
+                      step="0.5"
+                      placeholder="Heures"
+                      value={absence.heures}
+                      onChange={(e) => {
+                        const newAbsences = [...form.watch("absences")];
+                        newAbsences[index].heures = parseFloat(e.target.value) || 0;
+                        form.setValue("absences", newAbsences);
+                      }}
+                    />
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="ghost"
+                      size="icon"
                       onClick={() => {
-                        const newAbsences = [...form.watch("absences", [])];
-                        const today = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-                        newAbsences.push({ date: today, heures: 0 });
+                        const newAbsences = form.watch("absences").filter((_, i) => i !== index);
                         form.setValue("absences", newAbsences);
                       }}
                     >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Ajouter une absence
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
-                </div>
-  
-                {/* Jours fériés */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Jours fériés du mois</label>
-                  {Object.entries(joursFeries2025)
-                    .filter(([date]) => date.startsWith(`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`))
-                    .map(([date, label]) => {
-                      const jourFerie = new Date(date);
-                      const jourSemaine = jourFerie.getDay();
-                      const heuresHabituelles = form.watch(`horairesSemaine.${jourSemaine}`) || 0;
-  
-                      return (
-                        <div key={date} className="space-y-2 p-2 bg-gray-50 rounded-lg">
-                          <div className="text-sm font-medium">{label}</div>
-                          <div className="flex items-center gap-4">
-                            <FormField
-                              control={form.control}
-                              name={`feriesTravailles.${date}.travaille`}
-                              render={({ field }) => (
-                                <FormItem className="flex items-center gap-2">
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value}
-                                      onCheckedChange={(checked) => {
-                                        field.onChange(checked);
-                                        if (checked) {
-                                          form.setValue(`feriesTravailles.${date}.heures`, heuresHabituelles);
-                                        }
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="text-sm">Travaillé</FormLabel>
-                                </FormItem>
-                              )}
-                            />
-                            {form.watch(`feriesTravailles.${date}.travaille`) && (
-                              <FormField
-                                control={form.control}
-                                name={`feriesTravailles.${date}.heures`}
-                                render={({ field }) => (
-                                  <FormItem className="flex items-center gap-2">
-                                    <FormControl>
-                                      <Input
-                                        type="number"
-                                        step="0.5"
-                                        placeholder={heuresHabituelles.toString()}
-                                        className="w-20"
-                                        {...field}
-                                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                      />
-                                    </FormControl>
-                                    <FormLabel className="text-sm">heures</FormLabel>
-                                  </FormItem>
-                                )}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-  
-                <Button type="submit" className="w-full">
-                  Calculer les heures
-                </Button>
-              </form>
-            </Form>
-  
-            {/* Résultats */}
-            {heuresCalcul && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-2">
-                <div className="text-sm font-medium">Résultats du mois :</div>
-                <div className="text-sm space-y-1">
-                  <div>Heures réelles travaillées : {heuresCalcul.heuresReelles.toFixed(2)}h</div>
-                  <div>Heures payées : {heuresCalcul.heuresPayees.toFixed(2)}h</div>
-                  {heuresCalcul.absences.length > 0 && (
-                    <div>
-                      <div className="font-medium mt-2">Absences :</div>
-                      {heuresCalcul.absences.map((absence, index) => (
-                        <div key={index}>
-                          {absence.date.toLocaleDateString('fr-FR')} : {absence.heures}h
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </Card>
-  
-          {/* Calendrier */}
-          <div className="grid grid-cols-7 gap-1">
-            {/* En-têtes des jours */}
-            {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((jour) => (
-              <div key={jour} className="text-center p-2 font-medium">
-                {jour}
-              </div>
-            ))}
-  
-            {/* Cellules vides pour le début du mois */}
-            {Array.from({ length: firstDayOfMonth }, (_, i) => (
-              <div key={`empty-${i}`} className="p-2 border-0"></div>
-            ))}
-  
-            {/* Jours du mois */}
-            {Array.from({ length: daysInMonth }, (_, i) => {
-              const date = new Date(year, month, i + 1);
-              const dateString = normalizeDate(date);
-              const isFerie = joursFeries2025[dateString];
-  
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.2, delay: i * 0.01 }}
-                  className={cn(
-                    "p-2 border rounded-lg",
-                    isFerie ? "bg-orange-50" : "bg-white",
-                    calculatedDate?.date.getTime() === date.getTime() && "ring-2 ring-[#42D80F]"
-                  )}
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const newAbsences = [...form.watch("absences", [])];
+                    const today = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+                    newAbsences.push({ date: today, heures: 0 });
+                    form.setValue("absences", newAbsences);
+                  }}
                 >
-                  <div className="text-sm font-medium">{i + 1}</div>
-                  {isFerie && (
-                    <div className="text-xs text-orange-600">{joursFeries2025[dateString]}</div>
-                  )}
-                  {echeances.find(e => e.date === i + 1) && (
-                    <div className={cn(
-                      "text-xs mt-1 p-1 rounded",
-                      "bg-[#42D80F]/10 text-[#42D80F]"
-                    )}>
-                      {echeances.find(e => e.date === i + 1)?.description}
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter une absence
+                </Button>
+              </div>
+            </div>
+
+            {/* Jours fériés */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Jours fériés du mois</label>
+              {Object.entries(joursFeries2025)
+                .filter(([date]) => date.startsWith(`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`))
+                .map(([date, label]) => {
+                  const jourFerie = new Date(date);
+                  const jourSemaine = jourFerie.getDay();
+                  const heuresHabituelles = form.watch(`horairesSemaine.${jourSemaine}`) || 0;
+
+                  return (
+                    <div key={date} className="space-y-2 p-2 bg-gray-50 rounded-lg">
+                      <div className="text-sm font-medium">{label}</div>
+                      <div className="flex items-center gap-4">
+                        <FormField
+                          control={form.control}
+                          name={`feriesTravailles.${date}.travaille`}
+                          render={({ field }) => (
+                            <FormItem className="flex items-center gap-2">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={(checked) => {
+                                    field.onChange(checked);
+                                    if (checked) {
+                                      form.setValue(`feriesTravailles.${date}.heures`, heuresHabituelles);
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="text-sm">Travaillé</FormLabel>
+                            </FormItem>
+                          )}
+                        />
+                        {form.watch(`feriesTravailles.${date}.travaille`) && (
+                          <FormField
+                            control={form.control}
+                            name={`feriesTravailles.${date}.heures`}
+                            render={({ field }) => (
+                              <FormItem className="flex items-center gap-2">
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.5"
+                                    placeholder={heuresHabituelles.toString()}
+                                    className="w-20"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                                                    />
+                                </FormControl>
+                                <FormLabel className="text-sm">heures</FormLabel>
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      </div>
                     </div>
-                  )}
-                </motion.div>
-              );
-            })}
+                  );
+                })}
+            </div>
+
+            <Button type="submit" className="w-full">
+              Calculer les heures
+            </Button>
+          </form>
+        </Form>
+
+        {/* Résultats */}
+        {heuresCalcul && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-2">
+            <div className="text-sm font-medium">Résultats du mois :</div>
+            <div className="text-sm space-y-1">
+              <div>Heures réelles travaillées : {heuresCalcul.heuresReelles.toFixed(2)}h</div>
+              <div>Heures payées : {heuresCalcul.heuresPayees.toFixed(2)}h</div>
+              {heuresCalcul.absences.length > 0 && (
+                <div>
+                  <div className="font-medium mt-2">Absences :</div>
+                  {heuresCalcul.absences.map((absence, index) => (
+                    <div key={index}>
+                      {absence.date.toLocaleDateString('fr-FR')} : {absence.heures}h
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      );
-    };
+        )}
+      </Card>
+
+      {/* Calendrier */}
+      <div className="grid grid-cols-7 gap-1">
+        {/* En-têtes des jours */}
+        {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((jour) => (
+          <div key={jour} className="text-center p-2 font-medium">
+            {jour}
+          </div>
+        ))}
+
+        {/* Cellules vides pour le début du mois */}
+        {Array.from({ length: firstDayOfMonth }, (_, i) => (
+          <div key={`empty-${i}`} className="p-2 border-0"></div>
+        ))}
+
+        {/* Jours du mois */}
+        {Array.from({ length: daysInMonth }, (_, i) => {
+          const date = new Date(year, month, i + 1);
+          const dateString = normalizeDate(date);
+          const isFerie = joursFeries2025[dateString];
+
+          return (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.2, delay: i * 0.01 }}
+              className={cn(
+                "p-2 border rounded-lg",
+                isFerie ? "bg-orange-50" : "bg-white",
+                calculatedDate?.date.getTime() === date.getTime() && "ring-2 ring-[#42D80F]"
+              )}
+            >
+              <div className="text-sm font-medium">{i + 1}</div>
+              {isFerie && (
+                <div className="text-xs text-orange-600">{joursFeries2025[dateString]}</div>
+              )}
+              {echeances.find(e => e.date === i + 1) && (
+                <div className={cn(
+                  "text-xs mt-1 p-1 rounded",
+                  "bg-[#42D80F]/10 text-[#42D80F]"
+                )}>
+                  {echeances.find(e => e.date === i + 1)?.description}
+                </div>
+              )}
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
   
     // Render principal
     return (
