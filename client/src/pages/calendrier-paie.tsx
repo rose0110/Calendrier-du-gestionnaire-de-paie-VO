@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Calendar,
   ChevronLeft,
@@ -13,36 +13,18 @@ import {
   CalendarDays,
   Timer,
   UserMinus,
-  GraduationCap,
-  ChevronDown
+  GraduationCap
 } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetTrigger 
-} from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   Form,
   FormControl,
@@ -51,13 +33,28 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from "@/components/ui/form"
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-} from "@/components/ui/context-menu";
+} from "@/components/ui/context-menu"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 type JoursFeries = {
@@ -177,238 +174,6 @@ type HeuresCalcul = {
 
 type SelectedFeature = 'heures' | 'plafond' | 'cp' | 'sup' | 'absences' | 'stagiaire' | null;
 
-const CustomDaysSection = ({ 
-  customRestDays, 
-  setCustomRestDays 
-}: { 
-  customRestDays: number[],
-  setCustomRestDays: (days: number[]) => void 
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <Collapsible
-      open={isOpen}
-      onOpenChange={setIsOpen}
-      className="w-full space-y-2"
-    >
-      <div className="flex items-center justify-between space-x-4 px-4">
-        <h4 className="text-sm font-semibold">
-          Configuration des jours de repos
-        </h4>
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" size="sm" className="w-9 p-0">
-            <ChevronDown className="h-4 w-4" />
-            <span className="sr-only">Toggle</span>
-          </Button>
-        </CollapsibleTrigger>
-      </div>
-      <CollapsibleContent className="space-y-2">
-        <div className="rounded-md border px-4 py-3 font-mono text-sm">
-          <div className="grid grid-cols-2 gap-4">
-            {DAYS_OF_WEEK.map((day) => (
-              <div key={day.value} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`day-${day.value}`}
-                  checked={customRestDays.includes(day.value)}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      setCustomRestDays([...customRestDays, day.value]);
-                    } else {
-                      setCustomRestDays(customRestDays.filter(d => d !== day.value));
-                    }
-                  }}
-                />
-                <label
-                  htmlFor={`day-${day.value}`}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  {day.label}
-                </label>
-              </div>
-            ))}
-          </div>
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
-  );
-};
-
-const DelayCalculator = ({ currentDate, onCalculate }: {
-  currentDate: Date | null;
-  onCalculate: (result: {
-    date: Date;
-    startDate: Date;
-    days: number;
-    type: 'calendaire' | 'ouvré' | 'ouvrable';
-    delayType: 'retractation' | 'subrogation';
-    carenceDays: number;
-    customRestDays?: number[];
-    nonWorkingDay?: number;
-  }) => void;
-}) => {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      days: 1,
-      type: 'calendaire',
-      delayType: 'retractation',
-      carenceDays: 0,
-    },
-  });
-
-  const onSubmitDelay = (values: z.infer<typeof formSchema>) => {
-    if (!currentDate) return;
-
-    const result = calculateFutureDate(
-      currentDate,
-      values.days,
-      values.type,
-      values.delayType,
-      values.carenceDays || 0,
-      values.type === 'ouvré' ? [6, 0] : [6, 0],
-      values.type === 'ouvrable' ? 0 : 0
-    );
-
-    onCalculate({
-      date: result,
-      startDate: currentDate,
-      days: values.days,
-      type: values.type,
-      delayType: values.delayType,
-      carenceDays: values.carenceDays || 0
-    });
-  };
-
-  return (
-    <div className="space-y-4 p-4">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmitDelay)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="days"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  {form.watch("delayType") === "subrogation"
-                    ? "Nombre de jours jusqu'à fin de subrogation"
-                    : "Nombre de jours"
-                  }
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min="1"
-                    {...field}
-                    onChange={e => field.onChange(parseInt(e.target.value))}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="type"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Type de délai</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionnez un type de délai" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="calendaire">Calendaire</SelectItem>
-                    <SelectItem value="ouvré">Ouvré</SelectItem>
-                    <SelectItem value="ouvrable">Ouvrable</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {form.watch("type") === "calendaire" && (
-            <FormField
-              control={form.control}
-              name="delayType"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Type de calcul</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      className="flex flex-col space-y-1"
-                    >
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="retractation" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          Délai de rétractation
-                        </FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="subrogation" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          Date de fin de subrogation
-                        </FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormDescription>
-                    {field.value === "retractation"
-                      ? "La date d'échéance sera automatiquement reportée au prochain jour ouvré si elle tombe un weekend ou un jour férié."
-                      : "Calcul de la date de fin de subrogation à partir de la date de début d'arrêt."}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          {form.watch("delayType") === "subrogation" && (
-            <FormField
-              control={form.control}
-              name="carenceDays"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Délai de carence</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      {...field}
-                      onChange={e => field.onChange(parseInt(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Nombre de jours de carence avant le début du maintien de salaire
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          <Button type="submit" className="w-full">
-            Calculer
-          </Button>
-        </form>
-      </Form>
-    </div>
-  );
-};
-
 const CalendrierPaie = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('year');
@@ -424,6 +189,7 @@ const CalendrierPaie = () => {
     customRestDays?: number[];
     nonWorkingDay?: number;
   } | null>(null);
+  const [isDelayDialogOpen, setIsDelayDialogOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [showCustomDaysDialog, setShowCustomDaysDialog] = useState(false);
   const [customRestDays, setCustomRestDays] = useState<number[]>([]);
@@ -431,7 +197,6 @@ const CalendrierPaie = () => {
   const [heuresCalcul, setHeuresCalcul] = useState<HeuresCalcul | null>(null);
   const [selectedFeature, setSelectedFeature] = useState<SelectedFeature>(null);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
-  const [showDelayPanel, setShowDelayPanel] = useState(false);
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -439,17 +204,6 @@ const CalendrierPaie = () => {
     defaultValues: {
       days: 1,
       carenceDays: 0,
-      horairesSemaine: {
-        0: 0, // Dimanche
-        1: 0, // Lundi
-        2: 0, // Mardi
-        3: 0, // Mercredi
-        4: 0, // Jeudi
-        5: 0, // Vendredi
-        6: 0, // Samedi
-      },
-      absences: [],
-      feriesTravailles: {}
     },
   });
 
@@ -507,11 +261,11 @@ const CalendrierPaie = () => {
     return { workDays, workableDays };
   };
 
-    const calculerHeuresReelles = (
+  const calculerHeuresReelles = (
     horairesSemaine: { [key: string]: number },
     feriesTravailles: { [key: string]: { travaille: boolean, heures?: number } },
     absences: { date: Date; heures: number }[]
-  ) => {
+) => {
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth();
     const joursDansMois = new Date(year, month + 1, 0).getDate();
@@ -552,7 +306,7 @@ const CalendrierPaie = () => {
     }
 
     return { heuresReelles, heuresPayees };
-  };
+};
 
   const handleHeuresSubmit = (horaireNormal: number, feriesTravailles: { [key: string]: boolean }) => {
       const { heuresReelles, heuresPayees } = calculerHeuresReelles(
@@ -654,38 +408,28 @@ const CalendrierPaie = () => {
     return result;
   };
 
-  const handleCalculation = (result: {
-    date: Date;
-    startDate: Date;
-    days: number;
-    type: 'calendaire' | 'ouvré' | 'ouvrable';
-    delayType: 'retractation' | 'subrogation';
-    carenceDays: number;
-    customRestDays?: number[];
-    nonWorkingDay?: number;
-  }) => {
-    setCalculatedDate(result);
-    setShowDelayPanel(false);
-  };
+  const onSubmitDelay = (values: z.infer<typeof formSchema>) => {
+    if (!currentDate) return;
 
-
-    const onSubmit = (data: z.infer<typeof formSchema>) => {
-    const horairesSemaine = data.horairesSemaine || {};
-    const feriesTravailles = data.feriesTravailles || {};
-    const absences = data.absences || [];
-
-    const { heuresReelles, heuresPayees } = calculerHeuresReelles(
-      horairesSemaine,
-      feriesTravailles,
-      absences
+    const result = calculateFutureDate(
+      currentDate,
+      values.days,
+      values.type,
+      values.delayType,
+      values.carenceDays,
+      values.type === 'ouvré' ? customRestDays : [6, 0],
+      values.type === 'ouvrable' ? customNonWorkingDay || 0 : 0
     );
 
-    setHeuresCalcul({
-      horaireNormal: 0,
-      feriesTravailles,
-      absences,
-      heuresReelles,
-      heuresPayees
+    setCalculatedDate({
+      date: result,
+      startDate: currentDate,
+      days: values.days,
+      type: values.type,
+      delayType: values.delayType,
+      carenceDays: values.carenceDays || 0,
+      customRestDays: values.type === 'ouvré' ? customRestDays : undefined,
+      nonWorkingDay: values.type === 'ouvrable' ? customNonWorkingDay : undefined
     });
   };
 
@@ -793,235 +537,244 @@ const CalendrierPaie = () => {
     );
   };
 
-const renderFeatureModal = () => {
-  return (
-    <Dialog open={showFeatureModal} onOpenChange={setShowFeatureModal}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {selectedFeature === 'heures' && "Calcul des heures travaillées"}
-            {selectedFeature === 'plafond' && "Plafond sécurité sociale"}
-            {selectedFeature === 'cp' && "Prorata congés payés"}
-            {selectedFeature === 'sup' && "Heures supplémentaires"}
-            {selectedFeature === 'absences' && "Gestion des absences"}
-            {selectedFeature === 'stagiaire' && "Gratification stagiaire"}
-          </DialogTitle>
-          <DialogDescription>
-            {selectedFeature === 'heures' && "Calculez les heures travaillées en tenant compte des absences et jours fériés"}
-            {selectedFeature === 'plafond' && "Calculez le plafond de la sécurité sociale selon votresituation"}
-            {selectedFeature === 'cp' && "Calculez le prorata des congés payés"}
-            {selectedFeature === 'sup' && "Calculez vos heures supplémentaires ou complémentaires"}
-            {selectedFeature === 'absences' && "Gérez et calculez les absences"}
-            {selectedFeature === 'stagiaire' && "Calculez la gratification minimale de stage"}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          {selectedFeature === 'heures' && (
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  {/* Horaires habituels */}
-                  <div className="space-y-2">
-                      <label className="text-sm font-medium">Horaires habituels par jour                      </label>
-                      <div className="grid grid-cols-7 gap-2">
-                          {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((jour, index) => {
-                              const jourIndex = (index + 1) % 7; // Pour que dimanche soit 0
-                              return (
-                                  <FormField
-                                      key={jour}
-                                      control={form.control}
-                                      name={`horairesSemaine.${jourIndex}`}
-                                      render={({ field }) => (
-                                          <FormItem className="space-y-1">
-                                              <FormLabel className="text-xs text-center block">{jour}</FormLabel>
-                                              <FormControl>
-                                                  <Input
-                                                      type="number"
-                                                      step="0.5"
-                                                      placeholder="0"
-                                                      className="text-center h-8 px-1"
-                                                      {...field}
-                                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                                  />
-                                              </FormControl>
-                                          </FormItem>
-                                      )}
-                                  />
-                              );
-                          })}
-                      </div>
-                  </div>
+  const renderFeatureModal = () => {
+    return (
+      <Dialog open={showFeatureModal} onOpenChange={setShowFeatureModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedFeature === 'heures' && "Calcul des heures réelles"}
+              {selectedFeature === 'plafond' && "Plafond sécurité sociale"}
+              {selectedFeature === 'cp' && "Prorata CP"}
+              {selectedFeature === 'sup' && "Heures sup./complémentaires"}
+              {selectedFeature === 'absences' && "Calcul des absences"}
+              {selectedFeature === 'stagiaire' && "Gratification stagiaire"}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedFeature === 'heures' && "Calculez les heures réelles travaillées en tenant compte des absences et jours fériés"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedFeature === 'heures' && (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit((data) => {
+                    const { heuresReelles, heuresPayees } = calculerHeuresReelles(
+                        data.horairesSemaine,
+                        data.feriesTravailles || {},
+                        data.absences || []
+                    );
+                    setHeuresCalcul({
+                        horaireNormal: 0, // Pas utilisé avec le nouveau format, à supprimer ?
+                        feriesTravailles: data.feriesTravailles || {},
+                        absences: data.absences || [],
+                        heuresReelles,
+                        heuresPayees
+                    });
+                })} className="space-y-4">
+                    {/* Horaires habituels */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Horaires habituels par jour</label>
+                        <div className="grid grid-cols-7 gap-2">
+                            {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((jour, index) => {
+                                const jourIndex = (index + 1) % 7; // Pour que dimanche soit 0
+                                return (
+                                    <FormField
+                                        key={jour}
+                                        control={form.control}
+                                        name={`horairesSemaine.${jourIndex}`}
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-1">
+                                                <FormLabel className="text-xs text-center block">{jour}</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="number"
+                                                        step="0.5"
+                                                        placeholder="0"
+                                                        className="text-center h-8 px-1"
+                                                        {...field}
+                                                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                );
+                            })}
+                        </div>
+                    </div>
 
-                {/* Absences */}
-<div className="space-y-2">
-                  <label className="text-sm font-medium">Absences du mois</label>
+                  {/* Absences */}
                   <div className="space-y-2">
-                      {form.watch("absences", []).map((absence, index) => (
-                          <div key={index} className="flex items-center gap-2">
-                              <Input
-                                  type="date"
-                                  value={absence.date.toISOString().split('T')[0]}
-                                  min={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`}
-                                  max={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).getDate()).padStart(2, '0')}`}
-                                  onChange={(e) => {
-                                      const newDate = new Date(e.target.value);
-                                      const newAbsences = [...form.watch("absences")];
-                                      newAbsences[index].date = newDate;
-                                      // Pré-remplir les heures basées sur l'horaire habituel
-                                      const jourSemaine = newDate.getDay();
-                                      const heuresHabituelles = form.watch(`horairesSemaine.${jourSemaine}`) || 0;
-                                      newAbsences[index].heures = heuresHabituelles;
-                                      form.setValue("absences", newAbsences);
-                                  }}
-                              />
-                              <Input
-                                  type="number"
-                                  step="0.5"
-                                  placeholder="Heures"
-                                  value={absence.heures}
-                                  onChange={(e) => {
-                                      const newAbsences = [...form.watch("absences")];
-                                      newAbsences[index].heures = parseFloat(e.target.value) || 0;
-                                      form.setValue("absences", newAbsences);
-                                  }}
-                              />
-                              <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                      const newAbsences = form.watch("absences").filter((_, i) => i !== index);
-                                      form.setValue("absences", newAbsences);
-                                  }}
-                              >
-                                  <X className="h-4 w-4" />
-                              </Button>
-                          </div>
+                    <label className="text-sm font-medium">Absences du mois</label>
+                    <div className="space-y-2">
+                        {form.watch("absences", []).map((absence, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                                <Input
+                                    type="date"
+                                    value={absence.date.toISOString().split('T')[0]}
+                                    min={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`}
+                                    max={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).getDate()).padStart(2, '0')}`}
+                                    onChange={(e) => {
+                                        const newDate = new Date(e.target.value);
+                                        const newAbsences = [...form.watch("absences")];
+                                        newAbsences[index].date = newDate;
+                                        // Pré-remplir les heures basées sur l'horaire habituel
+                                        const jourSemaine = newDate.getDay();
+                                        const heuresHabituelles = form.watch(`horairesSemaine.${jourSemaine}`) || 0;
+                                        newAbsences[index].heures = heuresHabituelles;
+                                        form.setValue("absences", newAbsences);
+                                    }}
+                                />
+                                <Input
+                                    type="number"
+                                    step="0.5"
+                                    placeholder="Heures"
+                                    value={absence.heures}
+                                    onChange={(e) => {
+                                        const newAbsences = [...form.watch("absences")];
+                                        newAbsences[index].heures = parseFloat(e.target.value) || 0;
+                                        form.setValue("absences", newAbsences);
+                                    }}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                        const newAbsences = form.watch("absences").filter((_, i) => i !== index);
+                                        form.setValue("absences", newAbsences);
+                                    }}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                const newAbsences = [...form.watch("absences", [])];
+                                const today = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+                                newAbsences.push({ date: today, heures: 0 });
+                                form.setValue("absences", newAbsences);
+                            }}
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Ajouter une absence
+                        </Button>
+                    </div>
+                </div>
+
+                    {/* Jours fériés */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Jours fériés du mois</label>
+                        {Object.entries(joursFeries2025)
+                            .filter(([date]) => date.startsWith(`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`))
+                            .map(([date, label]) => {
+                                const jourFerie = new Date(date);
+                                const jourSemaine = jourFerie.getDay();
+                                const heuresHabituelles = form.watch(`horairesSemaine.${jourSemaine}`) || 0;
+
+                                return (
+                                    <div key={date} className="space-y-2 p-2 bg-gray-50 rounded-lg">
+                                        <div className="text-sm font-medium">{label}</div>
+                                        <div className="flex items-center gap-4">
+                                            <FormField
+                                                control={form.control}
+                                                name={`feriesTravailles.${date}.travaille`}
+                                                render={({ field }) => (
+                                                    <FormItem className="flex items-center gap-2">
+                                                        <FormControl>
+                                                            <Checkbox
+                                                                checked={field.value}
+                                                                onCheckedChange={(checked) => {
+                                                                    field.onChange(checked);
+                                                                    if (checked) {
+                                                                        form.setValue(`feriesTravailles.${date}.heures`, heuresHabituelles);
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </FormControl>
+                                                        <FormLabel className="text-sm">Travaillé</FormLabel>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            {form.watch(`feriesTravailles.${date}.travaille`) && (
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`feriesTravailles.${date}.heures`}
+                                                    render={({ field }) => (
+                                                        <FormItem className="flex items-center gap-2">
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="number"
+                                                                    step="0.5"
+                                                                    placeholder={heuresHabituelles.toString()}
+                                                                    className="w-20"
+                                                                    {...field}
+                                                                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                                                />
+                                                            </FormControl>
+                                                            <FormLabel className="text-sm">heures</FormLabel>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                    </div>
+
+                  <Button type="submit" className="w-full">
+                    Calculer les heures
+                  </Button>
+                </form>
+              </Form>
+            )}
+
+            {/* Affichage des résultats */}
+            {selectedFeature === 'heures' && heuresCalcul && (
+              <div className="p-4 bg-gray-50 rounded-lg space-y-2">
+                <div className="text-sm font-medium">Résultats du mois :</div>
+                <div className="text-sm space-y-1">
+                    <div>Heures réelles travaillées : {heuresCalcul.heuresReelles.toFixed(2)}h</div>
+                  <div>Heures payées : {heuresCalcul.heuresPayees.toFixed(2)}h</div>
+                  {heuresCalcul.absences.length > 0 && (
+                    <div>
+                      <div className="font-medium mt-2">Absences :</div>
+                      {heuresCalcul.absences.map((absence, index) => (
+                        <div key={index}>
+                          {absence.date.toLocaleDateString('fr-FR')} : {absence.heures}h
+                        </div>
                       ))}
-                      <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                              const newAbsences = [...form.watch("absences", [])];
-                              const today = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-                              newAbsences.push({ date: today, heures: 0 });
-                              form.setValue("absences", newAbsences);
-                          }}
-                      >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Ajouter une absence
-                      </Button>
-                  </div>
+                    </div>
+                  )}
+                </div>
               </div>
-
-                  {/* Jours fériés */}
-                  <div className="space-y-2">
-                      <label className="text-sm font-medium">Jours fériés du mois</label>
-                      {Object.entries(joursFeries2025)
-                          .filter(([date]) => date.startsWith(`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`))
-                          .map(([date, label]) => {
-                              const jourFerie = new Date(date);
-                              const jourSemaine = jourFerie.getDay();
-                              const heuresHabituelles = form.watch(`horairesSemaine.${jourSemaine}`) || 0;
-
-                              return (
-                                  <div key={date} className="space-y-2 p-2 bg-gray-50 rounded-lg">
-                                      <div className="text-sm font-medium">{label}</div>
-                                      <div className="flex items-center gap-4">
-                                          <FormField
-                                              control={form.control}
-                                              name={`feriesTravailles.${date}.travaille`}
-                                              render={({ field }) => (
-                                                  <FormItem className="flex items-center gap-2">
-                                                      <FormControl>
-                                                          <Checkbox
-                                                              checked={field.value}
-                                                              onCheckedChange={(checked) => {
-                                                                  field.onChange(checked);
-                                                                  if (checked) {
-                                                                      form.setValue(`feriesTravailles.${date}.heures`, heuresHabituelles);
-                                                                  }
-                                                              }}
-                                                          />
-                                                      </FormControl>
-                                                      <FormLabel className="text-sm">Travaillé</FormLabel>
-                                                  </FormItem>
-                                              )}
-                                          />
-                                          {form.watch(`feriesTravailles.${date}.travaille`) && (
-                                              <FormField
-                                                  control={form.control}
-                                                  name={`feriesTravailles.${date}.heures`}
-                                                  render={({ field }) => (
-                                                      <FormItem className="flex items-center gap-2">
-                                                          <FormControl>
-                                                              <Input
-                                                                  type="number"
-                                                                  step="0.5"
-                                                                  placeholder={heuresHabituelles.toString()}
-                                                                  className="w-20"
-                                                                  {...field}
-                                                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                                              />
-                                                          </FormControl>
-                                                          <FormLabel className="text-sm">heures</FormLabel>
-                                                      </FormItem>
-                                                  )}
-                                              />
-                                          )}
-                                      </div>                                  </div>
-                              );
-                          })}
-                  </div>
-
-                <Button type="submit" className="w-full">
-                  Calculer les heures
-                </Button>
-              </form>
-            </Form>
-          )}
-
-          {/* Affichage des résultats */}
-          {selectedFeature === 'heures' && heuresCalcul && (
-            <div className="p-4 bg-gray-50 rounded-lg space-y-2">
-              <div className="text-sm font-medium">Résultats du mois :</div>
-              <div className="text-sm space-y-1">
-                  <div>Heures réelles travaillées : {heuresCalcul.heuresReelles.toFixed(2)}h</div>
-                <div>Heures payées : {heuresCalcul.heuresPayees.toFixed(2)}h</div>
-                {heuresCalcul.absences.length > 0 && (
-                  <div>
-                    <div className="font-medium mt-2">Absences :</div>
-                    {heuresCalcul.absences.map((absence, index) => (
-                      <div key={index}>
-                        {absence.date.toLocaleDateString('fr-FR')} : {absence.heures}h
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+            )}
 
 
-          {selectedFeature === 'plafond' && (
-            <div>Calcul du plafond de la sécurité sociale</div>
-          )}
-          {selectedFeature === 'cp' && (
-            <div>Calcul du prorata CP</div>
-          )}
-          {selectedFeature === 'sup' && (
-            <div>Calcul des heures supplémentaires/complémentaires</div>
-          )}
-          {selectedFeature === 'absences' && (
-            <div>Calcul des absences</div>
-          )}
-          {selectedFeature === 'stagiaire' && (
-            <div>Calcul de la gratification stagiaire</div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-};
+            {selectedFeature === 'plafond' && (
+              <div>Calcul du plafond de la sécurité sociale</div>
+            )}
+            {selectedFeature === 'cp' && (
+              <div>Calcul du prorata CP</div>
+            )}
+            {selectedFeature === 'sup' && (
+              <div>Calcul des heures supplémentaires/complémentaires</div>
+            )}
+            {selectedFeature === 'absences' && (
+              <div>Calcul des absences</div>
+            )}
+            {selectedFeature === 'stagiaire' && (
+              <div>Calcul de la gratification stagiaire</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
 
   const renderMonthView = () => {
@@ -1280,7 +1033,7 @@ const renderFeatureModal = () => {
           <ContextMenuItem
             onClick={() => {
               setCurrentDate(date);
-              setShowDelayPanel(true);
+              setIsDelayDialogOpen(true);
             }}
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -1291,78 +1044,374 @@ const renderFeatureModal = () => {
     );
   };
   const renderCustomDaysDialog = () => {
+    const [calculatedCustomDays, setCalculatedCustomDays] = useState<{
+      workDays?: number;
+      workableDays?: number;
+      type: 'ouvré' | 'ouvrable';
+    } | null>(null);
+
+    const calculateCustomDays = () => {
+      const year = selectedDate.getFullYear();
+      const month = selectedDate.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      let workDays = 0;
+      let workableDays = 0;
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const dayOfWeek = date.getDay();
+        const dateString = normalizeDate(date);
+
+        if (form.watch("type") === "ouvré") {
+          if (!customRestDays.includes(dayOfWeek) && !joursFeries2025[dateString]) {
+            workDays++;
+          }
+        } else if (form.watch("type") === "ouvrable") {
+          if (dayOfWeek !== customNonWorkingDay && !joursFeries2025[dateString]) {
+            workableDays++;
+          }
+        }
+      }
+
+      setCalculatedCustomDays({
+        workDays: form.watch("type") === "ouvré" ? workDays : undefined,
+        workableDays: form.watch("type") === "ouvrable" ? workableDays : undefined,
+        type: form.watch("type")
+      });
+    };
+
     return (
       <Dialog open={showCustomDaysDialog} onOpenChange={setShowCustomDaysDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Configuration des jours de repos</DialogTitle>
-            <DialogDescription>
-              Sélectionnez les jours de repos hebdomadaires pour votre calcul
-            </DialogDescription>
+            <DialogTitle>
+              {form.watch("type") === "ouvré"
+                ? "Personnaliser les jours de repos"
+                : "Personnaliser le jour non travaillé"}
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              {DAYS_OF_WEEK.map((day) => (
-                <div key={day.value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`day-${day.value}`}
-                    checked={customRestDays.includes(day.value)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setCustomRestDays([...customRestDays, day.value]);
-                      } else {
-                        setCustomRestDays(customRestDays.filter(d => d !== day.value));
-                      }
-                    }}
-                  />
-                  <label
-                    htmlFor={`day-${day.value}`}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    {day.label}
-                  </label>
+
+          {form.watch("type") === "ouvré" ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Sélectionnez deux jours de repos</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {DAYS_OF_WEEK.map((day) => (
+                    <div
+                      key={day.value}
+                      className={cn(
+                        "p-2 rounded-md border cursor-pointer transition-colors",
+                        customRestDays.includes(day.value)
+                          ? "bg-orange-100 border-orange-500 text-orange-700"
+                          : "border-gray-200 hover:border-orange-500/50"
+                      )}
+                      onClick={() => {
+                        if (customRestDays.includes(day.value)) {
+                          setCustomRestDays(customRestDays.filter(d => d !== day.value));
+                        } else if (customRestDays.length < 2) {
+                          setCustomRestDays([...customRestDays, day.value]);
+                        }
+                      }}
+                    >
+                      {day.label}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
-            <div className="flex justify-end">
-              <Button onClick={() => setShowCustomDaysDialog(false)}>Fermer</Button>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Sélectionnez le jour non travaillé</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {DAYS_OF_WEEK.map((day) => (
+                    <div
+                      key={day.value}
+                      className={cn(
+                        "p-2 rounded-md border cursor-pointer transition-colors",
+                        customNonWorkingDay === day.value
+                          ? "bg-orange-100 border-orange-500 text-orange-700"
+                          : "border-gray-200 hover:border-orange-500/50"
+                      )}
+                      onClick={() => setCustomNonWorkingDay(day.value)}
+                    >
+                      {day.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
+          )}
+
+          {calculatedCustomDays && (
+            <div className="mt-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
+              <p className="text-sm font-medium text-orange-800">
+                Pour {selectedDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}:
+              </p>
+              <p className="text-sm text-orange-700">
+                {calculatedCustomDays.type === 'ouvré'
+                  ? `Jours ouvrés personnalisés : ${calculatedCustomDays.workDays} jours`
+                  : `Jours ouvrables personnalisés : ${calculatedCustomDays.workableDays} jours`
+                }
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCalculatedCustomDays(null);
+                setShowCustomDaysDialog(false);
+              }}
+            >
+              Fermer
+            </Button>
+            <Button
+              variant="default"
+              className="bg-orange-500 hover:bg-orange-600 text-white"
+              onClick={calculateCustomDays}
+              disabled={
+                (form.watch("type") === "ouvré" && customRestDays.length !== 2) ||
+                (form.watch("type") === "ouvrable" && customNonWorkingDay === null)
+              }
+            >
+              Calculer
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
     );
   };
 
+  const renderDelayForm = () => (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmitDelay)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="days"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                {form.watch("delayType") === "subrogation"
+                  ? "Nombre de jours jusqu'à fin de subrogation"
+                  : "Nombre de jours"
+                }
+              </FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  min="1"
+                  {...field}
+                  onChange={e => field.onChange(parseInt(e.target.value))}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="type"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Type de délai</FormLabel>
+              <div className="flex gap-2">
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Sélectionnez un type de délai" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="calendaire">Calendaire</SelectItem>
+                    <SelectItem value="ouvré">Ouvré</SelectItem>
+                    <SelectItem value="ouvrable">Ouvrable</SelectItem>
+                  </SelectContent>
+                </Select>
+                {(field.value === 'ouvré' || field.value === 'ouvrable') && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowCustomDaysDialog(true)}
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {form.watch("type") === "calendaire" && (
+          <FormField
+            control={form.control}
+            name="delayType"
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <FormLabel>Type de calcul</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    className="flex flex-col space-y-1"
+                  >
+                    <FormItem className="flex items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value="retractation" />
+                      </FormControl>
+                      <FormLabel className="font-normal">
+                        Délai de rétractation
+                      </FormLabel>
+                    </FormItem>
+                    <FormItem className="flex items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value="subrogation" />
+                      </FormControl>
+                      <FormLabel className="font-normal">
+                        Date de fin de subrogation
+                      </FormLabel>
+                    </FormItem>
+                  </RadioGroup>
+                </FormControl>
+                <FormDescription>
+                  {field.value === "retractation"
+                    ? "La date d'échéance sera automatiquement reportée au prochain jour ouvré si elle tombe un weekend ou un jour férié."
+                    : "Calcul de la date de fin de subrogation à partir de la date de début d'arrêt."}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
+        {form.watch("delayType") === "subrogation" && (
+          <FormField
+            control={form.control}
+            name="carenceDays"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Délai de carence avant maintien de salaire</FormLabel>                <FormControl>
+                  <Input
+                    type="number"
+                    min="0"                    {...field}
+                    onChange={e => field.onChange(parseInt(e.target.value))}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Nombre de jours de carence avant le début du maintien de salaire
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
+        <Button type="submit" className="w-full">
+          Calculer
+        </Button>
+
+        {calculatedDate && (
+          <div className="mt-6 space-y-4" id="calculation-results">
+            <div className="p-4 rounded-lg bg-gray-50 space-y-2">
+              <div className="font-medium text-gray-700">Résultat du calcul :</div>
+              <div className="space-y-1">
+                <div className="text-sm text-gray-600">
+                  {calculatedDate.delayType === 'subrogation'
+                    ? "Date de début d'arrêt : "
+                    : "Date de départ : "
+                  }
+                  {calculatedDate.startDate.toLocaleDateString('fr-FR', { dateStyle: 'long' })}
+                </div>
+                {calculatedDate.carenceDays > 0 && (
+                  <div className="text-sm text-gray-600">
+                    Délai de carence avant maintien de salaire : {calculatedDate.carenceDays} jours
+                  </div>
+                )}
+                <div className="text-sm text-gray-600">
+                  {calculatedDate.delayType === 'subrogation'
+                    ? `Durée de subrogation : ${calculatedDate.days} jour${calculatedDate.days > 1 ? 's' : ''} ${calculatedDate.type}`
+                    : `Délai : ${calculatedDate.days} jour${calculatedDate.days > 1 ? 's' : ''} ${calculatedDate.type}`
+                  }
+                </div>
+                {calculatedDate.customRestDays && (
+                  <div className="text-sm text-gray-600">
+                    Jours de repos : {calculatedDate.customRestDays.map(day =>
+                      DAYS_OF_WEEK[day].label
+                    ).join(', ')}
+                  </div>
+                )}
+                {calculatedDate.nonWorkingDay !== undefined && (
+                  <div className="text-sm text-gray-600">
+                    Jour non travaillé : {DAYS_OF_WEEK[calculatedDate.nonWorkingDay].label}
+                  </div>
+                )}
+                <div className="font-medium text-gray-900">
+                  {calculatedDate.delayType === 'subrogation'
+                    ? "Date de fin de subrogation : "
+                    : "Date d'échéance : "
+                  }
+                  {calculatedDate.date.toLocaleDateString('fr-FR', { dateStyle: 'long' })}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  const resultsElement = document.getElementById('calculation-results');
+                  if (resultsElement) {
+                    resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+              >
+                Voir les résultats
+              </Button>
+              <Button
+                type="button"
+                className="flex-1"
+                onClick={() => {
+                  setIsDelayDialogOpen(false);
+                  setSelectedDate(calculatedDate.date);
+                  setViewMode('month');
+                }}
+              >
+                Voir dans le calendrier
+              </Button>
+            </div>
+          </div>
+        )}
+      </form>
+    </Form>
+  );
 
   return (
     <>
-      <Sheet open={showDelayPanel} onOpenChange={setShowDelayPanel}>
-        <SheetContent side="right" className="w-[400px] sm:w-[540px]">
-          <div className="h-full flex flex-col">
-            <div className="flex-none py-6">
-              <h2 className="text-lg font-semibold">Calcul de délai</h2>
-              <p className="text-sm text-muted-foreground">
-                Calculez un délai à partir du {currentDate?.toLocaleDateString('fr-FR')}
-              </p>
-            </div>
-            <div className="flex-grow overflow-y-auto">
-              <DelayCalculator
-                currentDate={currentDate}
-                onCalculate={(result) => {
-                  setCalculatedDate(result);
-                  setShowDelayPanel(false);
-                }}
-              />
-              <CustomDaysSection
-                customRestDays={customRestDays}
-                setCustomRestDays={setCustomRestDays}
-              />
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+      <Dialog open={isDelayDialogOpen} onOpenChange={setIsDelayDialogOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Calculer un délai</DialogTitle>
+            <DialogDescription>
+              {form.watch("delayType") === "subrogation"
+                ? `Date de début d'arrêt : ${currentDate?.toLocaleDateString('fr-FR', { dateStyle: 'long' })}`
+                : `À partir du ${currentDate?.toLocaleDateString('fr-FR', { dateStyle: 'long' })}`
+              }
+            </DialogDescription>
+          </DialogHeader>
+            {renderDelayForm()}
+        </DialogContent>
+      </Dialog>
 
-      {/*{renderCustomDaysDialog()} */}
+      {renderCustomDaysDialog()}
 
       <div className="max-w-6xl mx-auto p-6 font-figtree">
         <div className="flex justify-between items-center mb-8">
