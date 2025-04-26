@@ -82,20 +82,20 @@ const echeancesAnnuelles2025 = [
   {
     date: new Date(2025, 2, 1), // 1er mars 2025
     description: 'Contributions formation et dialogue social (OPCO)',
-    type: 'declaration',
-    importance: 'high'
+    type: 'declaration' as TypeEcheance,
+    importance: 'high' as 'high' | 'normal'
   },
   {
     date: new Date(2025, 4, 5), // 5 mai 2025
     description: 'DOETH',
-    type: 'handicap',
-    importance: 'high'
+    type: 'handicap' as TypeEcheance,
+    importance: 'high' as 'high' | 'normal'
   },
   {
     date: new Date(2025, 4, 27), // 27 mai 2025 (provisoire)
     description: 'Ouverture plateforme SOLTéA',
-    type: 'soltea',
-    importance: 'high'
+    type: 'soltea' as TypeEcheance,
+    importance: 'high' as 'high' | 'normal'
   }
 ];
 
@@ -225,14 +225,14 @@ const CalendrierPaie = () => {
       {
         date: dsn50Plus.getDate(),
         description: 'DSN entreprises +50 salariés',
-        type: 'dsn',
-        importance: 'high'
+        type: 'dsn' as TypeEcheance,
+        importance: 'high' as 'high' | 'normal'
       },
       {
         date: dsnMoins50.getDate(),
         description: 'DSN entreprises -50 salariés',
-        type: 'dsn',
-        importance: 'high'
+        type: 'dsn' as TypeEcheance,
+        importance: 'high' as 'high' | 'normal'
       }
     ];
 
@@ -323,7 +323,7 @@ const CalendrierPaie = () => {
       delayType: values.delayType,
       carenceDays: values.carenceDays || 0,
       customRestDays: values.type === 'ouvré' ? customRestDays : undefined,
-      nonWorkingDay: values.type === 'ouvrable' ? customNonWorkingDay : undefined
+      nonWorkingDay: values.type === 'ouvrable' ? (customNonWorkingDay || 0) : undefined
     });
   };
 
