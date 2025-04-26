@@ -62,13 +62,6 @@ const normalizeDate = (date: Date): string => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 };
 
-// Fonction pour obtenir le numéro de semaine d'une date
-const getWeekNumber = (date: Date): number => {
-  const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-  const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
-  return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-};
-
 type TypeEcheance = 'dsn' | 'declaration' | 'csa' | 'handicap' | 'soltea';
 
 type Echeance = {
@@ -82,20 +75,20 @@ const echeancesAnnuelles2025 = [
   {
     date: new Date(2025, 2, 1), // 1er mars 2025
     description: 'Contributions formation et dialogue social (OPCO)',
-    type: 'declaration' as TypeEcheance,
-    importance: 'high' as 'high' | 'normal'
+    type: 'declaration',
+    importance: 'high'
   },
   {
     date: new Date(2025, 4, 5), // 5 mai 2025
     description: 'DOETH',
-    type: 'handicap' as TypeEcheance,
-    importance: 'high' as 'high' | 'normal'
+    type: 'handicap',
+    importance: 'high'
   },
   {
     date: new Date(2025, 4, 27), // 27 mai 2025 (provisoire)
     description: 'Ouverture plateforme SOLTéA',
-    type: 'soltea' as TypeEcheance,
-    importance: 'high' as 'high' | 'normal'
+    type: 'soltea',
+    importance: 'high'
   }
 ];
 
@@ -225,14 +218,14 @@ const CalendrierPaie = () => {
       {
         date: dsn50Plus.getDate(),
         description: 'DSN entreprises +50 salariés',
-        type: 'dsn' as TypeEcheance,
-        importance: 'high' as 'high' | 'normal'
+        type: 'dsn',
+        importance: 'high'
       },
       {
         date: dsnMoins50.getDate(),
         description: 'DSN entreprises -50 salariés',
-        type: 'dsn' as TypeEcheance,
-        importance: 'high' as 'high' | 'normal'
+        type: 'dsn',
+        importance: 'high'
       }
     ];
 
@@ -323,7 +316,7 @@ const CalendrierPaie = () => {
       delayType: values.delayType,
       carenceDays: values.carenceDays || 0,
       customRestDays: values.type === 'ouvré' ? customRestDays : undefined,
-      nonWorkingDay: values.type === 'ouvrable' ? (customNonWorkingDay || 0) : undefined
+      nonWorkingDay: values.type === 'ouvrable' ? customNonWorkingDay : undefined
     });
   };
 
@@ -459,60 +452,6 @@ const CalendrierPaie = () => {
       <div key={`empty-${i}`} className="p-2 border-0"></div>
     ));
 
-    // Organisation des jours par semaine pour afficher les numéros de semaine
-    const organizedDays = [];
-    let currentWeek = [];
-    let previousWeekNumber = -1;
-
-    // Ajouter les cellules vides au début
-    for (let i = 0; i < firstDayOfMonth; i++) {
-      currentWeek.push(<div key={`empty-${i}`} className="p-2 border-0"></div>);
-    }
-
-    // Ajouter chaque jour avec son numéro de semaine
-    for (let i = 0; i < daysInMonth; i++) {
-      const date = new Date(year, month, i + 1);
-      const weekNumber = getWeekNumber(date);
-      
-      // Si on change de semaine ou si c'est le premier jour
-      if (previousWeekNumber !== weekNumber) {
-        // Si ce n'est pas la première itération, on ajoute la semaine précédente
-        if (previousWeekNumber !== -1 && currentWeek.length > 0) {
-          organizedDays.push({
-            weekNumber: previousWeekNumber,
-            days: [...currentWeek]
-          });
-          currentWeek = [];
-        }
-        previousWeekNumber = weekNumber;
-      }
-      
-      currentWeek.push(
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.2, delay: i * 0.01 }}
-        >
-          {renderDay(date)}
-        </motion.div>
-      );
-      
-      // Si c'est un dimanche ou le dernier jour du mois
-      if (date.getDay() === 0 || i === daysInMonth - 1) {
-        // Compléter avec des cellules vides si nécessaire
-        while (currentWeek.length < 7) {
-          currentWeek.push(<div key={`empty-end-${currentWeek.length}`} className="p-2 border-0"></div>);
-        }
-        
-        organizedDays.push({
-          weekNumber: weekNumber,
-          days: [...currentWeek]
-        });
-        currentWeek = [];
-      }
-    }
-
     return (
       <Card className="border-[#42D80F]/10">
         <CardContent className="p-6">
@@ -559,26 +498,13 @@ const CalendrierPaie = () => {
             </div>
           </div>
 
-          <div>
-            <div className="grid grid-cols-8 gap-2 mb-2">
-              <div className="font-medium text-center p-2 text-gray-600 font-figtree bg-gray-50 rounded">
-                Sem.
-              </div>
-              {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
-                <div key={day} className="font-medium text-center p-2 text-gray-500 font-figtree">
-                  {day}
-                </div>
-              ))}
-            </div>
-            
-            {organizedDays.map((week, index) => (
-              <div key={`week-${week.weekNumber}-${index}`} className="grid grid-cols-8 gap-2 mb-2">
-                <div className="font-medium text-center p-2 text-gray-600 font-figtree bg-gray-50 rounded">
-                  {week.weekNumber}
-                </div>
-                {week.days}
+          <div className="grid grid-cols-7 gap-2">
+            {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
+              <div key={day} className="font-medium text-center p-2 text-gray-500 font-figtree">
+                {day}
               </div>
             ))}
+            {emptyCells.concat(days)}
           </div>
         </CardContent>
       </Card>
@@ -676,7 +602,7 @@ const CalendrierPaie = () => {
       const [calculatedCustomDays, setCalculatedCustomDays] = useState<{
         workDays?: number;
         workableDays?: number;
-        type: 'ouvré' | 'ouvrable' | 'calendaire';
+        type: 'ouvré' | 'ouvrable';
       } | null>(null);
 
       const calculateCustomDays = () => {
