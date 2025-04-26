@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Plus, X, MousePointerClick, Settings } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
@@ -189,7 +189,7 @@ const CalendrierPaie = () => {
     return date;
   };
 
-  const calculateWorkDays = (year: number, month: number) => {
+  const calculateWorkDays = useCallback((year: number, month: number) => {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     let workDays = 0;
     let workableDays = 0;
@@ -208,9 +208,9 @@ const CalendrierPaie = () => {
     }
 
     return { workDays, workableDays };
-  };
+  }, []);
 
-  const getEcheancesPaie = (year: number, month: number): Echeance[] => {
+  const getEcheancesPaie = useCallback((year: number, month: number): Echeance[] => {
     const dsn50Plus = calculateDSNDate(year, month, 5);
     const dsnMoins50 = calculateDSNDate(year, month, 15);
 
@@ -235,13 +235,13 @@ const CalendrierPaie = () => {
         echeances.push({
           date: ea.date.getDate(),
           description: ea.description,
-          type: ea.type,
-          importance: ea.importance
+          type: ea.type as TypeEcheance,
+          importance: ea.importance as 'high' | 'normal'
         });
       });
 
     return echeances;
-  };
+  }, []);
 
   const calculateFutureDate = (
     startDate: Date,
@@ -427,30 +427,42 @@ const CalendrierPaie = () => {
   const renderMonthView = () => {
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const firstDay = new Date(year, month, 1).getDay();
-    const firstDayOfMonth = firstDay === 0 ? 6 : firstDay - 1;
-    const { workDays, workableDays } = calculateWorkDays(year, month);
-    const echeances = getEcheancesPaie(year, month);
+    
+    // Memoize month calculations
+    const { daysInMonth, firstDayOfMonth, workDays, workableDays, echeances } = useMemo(() => {
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const firstDay = new Date(year, month, 1).getDay();
+      const firstDayOfMonth = firstDay === 0 ? 6 : firstDay - 1;
+      const { workDays, workableDays } = calculateWorkDays(year, month);
+      const echeances = getEcheancesPaie(year, month);
+      
+      return { daysInMonth, firstDayOfMonth, workDays, workableDays, echeances };
+    }, [year, month, calculateWorkDays, getEcheancesPaie]);
 
-    const days = Array.from({ length: daysInMonth }, (_, i) => {
-      const date = new Date(year, month, i + 1);
-      const renderDayComponent = renderDay(date);
-      return (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.2, delay: i * 0.01 }}
-        >
-          {renderDayComponent}
-        </motion.div>
-      );
-    });
+    // Memoize day components
+    const days = useMemo(() => {
+      return Array.from({ length: daysInMonth }, (_, i) => {
+        const date = new Date(year, month, i + 1);
+        const renderDayComponent = renderDay(date);
+        return (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2, delay: i * 0.01 }}
+          >
+            {renderDayComponent}
+          </motion.div>
+        );
+      });
+    }, [year, month, daysInMonth, renderDay]);
 
-    const emptyCells = Array.from({ length: firstDayOfMonth }, (_, i) => (
-      <div key={`empty-${i}`} className="p-2 border-0"></div>
-    ));
+    // Memoize empty cells
+    const emptyCells = useMemo(() => {
+      return Array.from({ length: firstDayOfMonth }, (_, i) => (
+        <div key={`empty-${i}`} className="p-2 border-0"></div>
+      ));
+    }, [firstDayOfMonth]);
 
     return (
       <Card className="border-[#42D80F]/10">
@@ -511,7 +523,7 @@ const CalendrierPaie = () => {
     );
   };
 
-  const renderDay = (date: Date) => {
+  const renderDay = useCallback((date: Date) => {
     const dateString = normalizeDate(date);
     const dayOfWeek = date.getDay();
     const isWeekend = dayOfWeek === 6 || dayOfWeek === 0;
@@ -523,6 +535,7 @@ const CalendrierPaie = () => {
 
     const echeancesDuJour = getEcheancesPaie(date.getFullYear(), date.getMonth())
       .filter(e => e.date === date.getDate());
+  }, [calculatedDate, getEcheancesPaie]);
 
     return (
       <ContextMenu>
