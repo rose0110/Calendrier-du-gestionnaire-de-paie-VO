@@ -112,16 +112,7 @@ const formSchema = z.object({
   nonWorkingDay: z.number().optional(),
 });
 
-const absenceFormSchema = z.object({
-  startDate: z.date({
-    required_error: "Veuillez sélectionner une date de début"
-  }),
-  endDate: z.date({
-    required_error: "Veuillez sélectionner une date de fin"
-  }),
-  hoursPerDay: z.number().min(1).max(24, "Maximum 24 heures par jour"),
-  workingDaysOnly: z.boolean().default(true),
-});
+
 
 type DayOfWeek = {
   value: number;
@@ -158,14 +149,7 @@ const CalendrierPaie = () => {
   const [showCustomDaysDialog, setShowCustomDaysDialog] = useState(false);
   const [customRestDays, setCustomRestDays] = useState<number[]>([]);
   const [customNonWorkingDay, setCustomNonWorkingDay] = useState<number | null>(null);
-  const [isAbsenceDialogOpen, setIsAbsenceDialogOpen] = useState(false);
-  const [absenceResult, setAbsenceResult] = useState<{
-    totalDays: number;
-    workingDays: number;
-    totalHours: number;
-    weekendDays: number;
-    holidayDays: number;
-  } | null>(null);
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -175,13 +159,7 @@ const CalendrierPaie = () => {
     },
   });
 
-  const absenceForm = useForm<z.infer<typeof absenceFormSchema>>({
-    resolver: zodResolver(absenceFormSchema),
-    defaultValues: {
-      hoursPerDay: 7,
-      workingDaysOnly: true,
-    },
-  });
+
 
   useEffect(() => {
     if (calculatedDate && calculatedDayRef.current) {
@@ -192,50 +170,7 @@ const CalendrierPaie = () => {
     }
   }, [calculatedDate]);
 
-  const calculateAbsence = (data: z.infer<typeof absenceFormSchema>) => {
-    const { startDate, endDate, hoursPerDay, workingDaysOnly } = data;
-    
-    let totalDays = 0;
-    let workingDays = 0;
-    let weekendDays = 0;
-    let holidayDays = 0;
-    
-    const currentDate = new Date(startDate);
-    
-    while (currentDate <= endDate) {
-      const dayOfWeek = currentDate.getDay();
-      const dateString = normalizeDate(currentDate);
-      const isWeekend = dayOfWeek === 6 || dayOfWeek === 0;
-      const isHoliday = joursFeries2025[dateString];
-      
-      totalDays++;
-      
-      if (isWeekend) {
-        weekendDays++;
-      } else if (isHoliday) {
-        holidayDays++;
-      } else {
-        workingDays++;
-      }
-      
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-    
-    const daysToCount = workingDaysOnly ? workingDays : totalDays;
-    const totalHours = daysToCount * hoursPerDay;
-    
-    setAbsenceResult({
-      totalDays,
-      workingDays,
-      totalHours,
-      weekendDays,
-      holidayDays
-    });
-  };
 
-  const onSubmitAbsence = (data: z.infer<typeof absenceFormSchema>) => {
-    calculateAbsence(data);
-  };
 
 
   const getNextWorkingDay = (date: Date, restDays: number[] = [6, 0], nonWorkingDay: number = 0) => {
@@ -678,15 +613,7 @@ const CalendrierPaie = () => {
             <Plus className="w-4 h-4 mr-2" />
             Calculer un délai
           </ContextMenuItem>
-          <ContextMenuItem
-            onClick={() => {
-              absenceForm.setValue('startDate', date);
-              setIsAbsenceDialogOpen(true);
-            }}
-          >
-            <Calendar className="w-4 h-4 mr-2" />
-            Calculer des absences
-          </ContextMenuItem>
+
         </ContextMenuContent>
       </ContextMenu>
     );
@@ -1061,127 +988,7 @@ const CalendrierPaie = () => {
 
       {renderCustomDaysDialog()}
 
-      <Dialog open={isAbsenceDialogOpen} onOpenChange={setIsAbsenceDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Calculer des absences</DialogTitle>
-            <DialogDescription>
-              Calculez le nombre d'heures d'absence entre deux dates
-            </DialogDescription>
-          </DialogHeader>
 
-          <Form {...absenceForm}>
-            <form onSubmit={absenceForm.handleSubmit(onSubmitAbsence)} className="space-y-4">
-              <FormField
-                control={absenceForm.control}
-                name="startDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date de début</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="date"
-                        value={field.value ? field.value.toISOString().split('T')[0] : ''}
-                        onChange={(e) => field.onChange(new Date(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={absenceForm.control}
-                name="endDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date de fin</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="date"
-                        value={field.value ? field.value.toISOString().split('T')[0] : ''}
-                        onChange={(e) => field.onChange(new Date(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={absenceForm.control}
-                name="hoursPerDay"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Heures par jour</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="1"
-                        max="24"
-                        step="0.5"
-                        {...field}
-                        onChange={e => field.onChange(parseFloat(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={absenceForm.control}
-                name="workingDaysOnly"
-                render={({ field }) => (
-                  <FormItem className="flex items-center space-x-2">
-                    <FormControl>
-                      <input
-                        type="checkbox"
-                        checked={field.value}
-                        onChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel className="text-sm font-normal">
-                      Compter uniquement les jours ouvrés
-                    </FormLabel>
-                  </FormItem>
-                )}
-              />
-
-              {absenceResult && (
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h3 className="font-medium text-blue-800 mb-2">Résultat du calcul</h3>
-                  <div className="space-y-1 text-sm text-blue-700">
-                    <p>Total de jours : {absenceResult.totalDays}</p>
-                    <p>Jours ouvrés : {absenceResult.workingDays}</p>
-                    <p>Jours de week-end : {absenceResult.weekendDays}</p>
-                    <p>Jours fériés : {absenceResult.holidayDays}</p>
-                    <p className="font-medium pt-2 border-t border-blue-200">
-                      Total d'heures d'absence : {absenceResult.totalHours}h
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2">
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  onClick={() => {
-                    setIsAbsenceDialogOpen(false);
-                    setAbsenceResult(null);
-                  }}
-                >
-                  Fermer
-                </Button>
-                <Button type="submit">
-                  Calculer
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
 
       <div className="max-w-6xl mx-auto p-6 font-figtree">
         <div className="flex justify-between items-center mb-8">
