@@ -616,7 +616,6 @@ const CalendrierPaie = () => {
     );
   };
     const renderCustomDaysDialog = () => {
-
       return (
         <Dialog open={showCustomDaysDialog} onOpenChange={setShowCustomDaysDialog}>
           <DialogContent className="max-w-md">
@@ -680,40 +679,19 @@ const CalendrierPaie = () => {
               </div>
             )}
 
-            {calculatedCustomDays && (
-              <div className="mt-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
-                <p className="text-sm font-medium text-orange-800">
-                  Pour {selectedDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}:
-                </p>
-                <p className="text-sm text-orange-700">
-                  {calculatedCustomDays.type === 'ouvré' 
-                    ? `Jours ouvrés personnalisés : ${calculatedCustomDays.workDays} jours`
-                    : `Jours ouvrables personnalisés : ${calculatedCustomDays.workableDays} jours`
-                  }
-                </p>
-              </div>
-            )}
-
             <div className="flex justify-end gap-2 mt-4">
               <Button 
                 variant="outline" 
-                onClick={() => {
-                  setCalculatedCustomDays(null);
-                  setShowCustomDaysDialog(false);
-                }}
+                onClick={() => setShowCustomDaysDialog(false)}
               >
-                Fermer
+                Annuler
               </Button>
               <Button
                 variant="default"
                 className="bg-orange-500 hover:bg-orange-600 text-white"
-                onClick={calculateCustomDays}
-                disabled={
-                  (form.watch("type") === "ouvré" && customRestDays.length !== 2) ||
-                  (form.watch("type") === "ouvrable" && customNonWorkingDay === null)
-                }
+                onClick={() => setShowCustomDaysDialog(false)}
               >
-                Calculer
+                Valider
               </Button>
             </div>
           </DialogContent>
@@ -828,16 +806,18 @@ const CalendrierPaie = () => {
           />
         )}
 
-        {form.watch("delayType") === "subrogation" && (
+        {form.watch("delayType") === "subrogation" && form.watch("type") === "calendaire" && (
           <FormField
             control={form.control}
             name="carenceDays"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Délai de carence avant maintien de salaire</FormLabel>                <FormControl>
+                <FormLabel>Délai de carence avant maintien de salaire</FormLabel>
+                <FormControl>
                   <Input
                     type="number"
-                    min="0"                    {...field}
+                    min="0"
+                    {...field}
                     onChange={e => field.onChange(parseInt(e.target.value))}
                   />
                 </FormControl>
