@@ -306,8 +306,8 @@ const CalendrierPaie = () => {
     if (!currentDate) return;
 
     // Récupérer les jours de repos personnalisés
-    const finalRestDays = values.type === 'ouvré' && customRestDays.length > 0 ? customRestDays : [6, 0];
-    const finalNonWorkingDay = values.type === 'ouvrable' && customNonWorkingDay !== null ? customNonWorkingDay : 0;
+    const finalRestDays = values.type === 'ouvré' ? customRestDays : [6, 0];
+    const finalNonWorkingDay = values.type === 'ouvrable' ? (customNonWorkingDay !== null ? customNonWorkingDay : 0) : 0;
 
     const result = calculateFutureDate(
       currentDate,
@@ -326,8 +326,8 @@ const CalendrierPaie = () => {
       type: values.type,
       delayType: values.delayType,
       carenceDays: values.carenceDays || 0,
-      customRestDays: values.type === 'ouvré' ? customRestDays : undefined,
-      nonWorkingDay: values.type === 'ouvrable' && customNonWorkingDay !== null ? customNonWorkingDay : undefined
+      customRestDays: values.type === 'ouvré' ? finalRestDays : undefined,
+      nonWorkingDay: values.type === 'ouvrable' ? finalNonWorkingDay : undefined
     });
 
     // Ne pas fermer automatiquement le dialogue pour que l'utilisateur puisse voir le résultat
