@@ -330,7 +330,7 @@ const CalendrierPaie = () => {
       nonWorkingDay: values.type === 'ouvrable' && customNonWorkingDay !== null ? customNonWorkingDay : undefined
     });
 
-    setIsDelayDialogOpen(false);
+    // Ne pas fermer automatiquement le dialogue pour que l'utilisateur puisse voir le résultat
   };
 
   const renderAnnualView = () => {
@@ -716,7 +716,7 @@ const CalendrierPaie = () => {
                   type="number"
                   min="1"
                   {...field}
-                  onChange={e => field.onChange(parseInt(e.target.value))}
+                  onChange={e => field.onChange(parseInt(e.target.value) || 1)}
                 />
               </FormControl>
               <FormMessage />
