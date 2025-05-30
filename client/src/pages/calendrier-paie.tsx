@@ -154,7 +154,9 @@ const CalendrierPaie = () => {
   const [selectedAbsenceDates, setSelectedAbsenceDates] = useState<string[]>([]);
   const [calcMonth, setCalcMonth] = useState(selectedDate.getMonth());
   const [calcYear, setCalcYear] = useState(selectedDate.getFullYear());
-  const [weeklyWorkingDays, setWeeklyWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]); // Lun-Ven par défaut
+  // Jours travaillés séparés pour chaque mode
+  const [daysWorkingDays, setDaysWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]); // Pour mode jours
+  const [hoursWorkingDays, setHoursWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]); // Pour mode heures
   const [weeklyHours, setWeeklyHours] = useState(35);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
 
@@ -626,12 +628,15 @@ const CalendrierPaie = () => {
     };
 
     const toggleAbsenceDate = (dateKey: string) => {
+      // Utiliser les jours travaillés du mode actuel
+      const workingDays = calculatorMode === 'days' ? daysWorkingDays : hoursWorkingDays;
+      
       // Vérifier si c'est un jour habituellement travaillé
       const [year, month, day] = dateKey.split('-').map(Number);
       const date = new Date(year, month - 1, day);
       const dayOfWeek = date.getDay();
       
-      if (!weeklyWorkingDays.includes(dayOfWeek)) {
+      if (!workingDays.includes(dayOfWeek)) {
         // Ne pas permettre de marquer comme absence un jour non travaillé
         return;
       }
@@ -651,6 +656,8 @@ const CalendrierPaie = () => {
     };
 
     const calculateResults = () => {
+      const workingDays = calculatorMode === 'days' ? daysWorkingDays : hoursWorkingDays;
+      
       if (calculatorMode === 'days') {
         // Calculer les jours théoriques basés sur les jours travaillés de la semaine
         const daysInMonth = getDaysInMonth(calcYear, calcMonth);
@@ -661,7 +668,7 @@ const CalendrierPaie = () => {
           const dayOfWeek = date.getDay();
           const dateKey = formatDateKey(calcYear, calcMonth, day);
           
-          if (weeklyWorkingDays.includes(dayOfWeek) && !joursFeries2025[dateKey]) {
+          if (workingDays.includes(dayOfWeek) && !joursFeries2025[dateKey]) {
             theoricalDays++;
           }
         }
@@ -683,7 +690,7 @@ const CalendrierPaie = () => {
           const dayOfWeek = date.getDay();
           const dateKey = formatDateKey(calcYear, calcMonth, day);
           
-          if (weeklyWorkingDays.includes(dayOfWeek) && !joursFeries2025[dateKey]) {
+          if (workingDays.includes(dayOfWeek) && !joursFeries2025[dateKey]) {
             // Utiliser les heures spécifiques du jour ou les heures par défaut du jour de la semaine
             const defaultHours = dailyHoursSchedule[`default-${dayOfWeek}`] || 7;
             const hours = dailyHoursSchedule[dateKey] || defaultHours;
@@ -725,7 +732,8 @@ const CalendrierPaie = () => {
 
         const date = new Date(calcYear, calcMonth, day);
         const dayOfWeek = date.getDay();
-        const isWorkingDay = weeklyWorkingDays.includes(dayOfWeek) && !joursFeries2025[dateKey];
+        const workingDays = calculatorMode === 'days' ? daysWorkingDays : hoursWorkingDays;
+        const isWorkingDay = workingDays.includes(dayOfWeek) && !joursFeries2025[dateKey];
         const defaultHours = dailyHoursSchedule[`default-${dayOfWeek}`] || 7;
 
         days.push(
@@ -863,15 +871,15 @@ const CalendrierPaie = () => {
                         key={day.value}
                         className={cn(
                           "p-2 text-center rounded border cursor-pointer transition-colors text-sm",
-                          weeklyWorkingDays.includes(day.value)
+                          daysWorkingDays.includes(day.value)
                             ? "bg-blue-100 border-blue-300 text-blue-700"
                             : "bg-gray-50 border-gray-200"
                         )}
                         onClick={() => {
-                          if (weeklyWorkingDays.includes(day.value)) {
-                            setWeeklyWorkingDays(weeklyWorkingDays.filter(d => d !== day.value));
+                          if (daysWorkingDays.includes(day.value)) {
+                            setDaysWorkingDays(daysWorkingDays.filter((d: number) => d !== day.value));
                           } else {
-                            setWeeklyWorkingDays([...weeklyWorkingDays, day.value]);
+                            setDaysWorkingDays([...daysWorkingDays, day.value]);
                           }
                         }}
                       >
@@ -894,18 +902,18 @@ const CalendrierPaie = () => {
                         <div className="flex items-center gap-2">
                           <input
                             type="checkbox"
-                            checked={weeklyWorkingDays.includes(day.value)}
+                            checked={hoursWorkingDays.includes(day.value)}
                             onChange={() => {
-                              if (weeklyWorkingDays.includes(day.value)) {
-                                setWeeklyWorkingDays(weeklyWorkingDays.filter(d => d !== day.value));
+                              if (hoursWorkingDays.includes(day.value)) {
+                                setHoursWorkingDays(hoursWorkingDays.filter((d: number) => d !== day.value));
                               } else {
-                                setWeeklyWorkingDays([...weeklyWorkingDays, day.value]);
+                                setHoursWorkingDays([...hoursWorkingDays, day.value]);
                               }
                             }}
                             className="rounded"
                           />
                           <span className="text-sm">Travaillé</span>
-                          {weeklyWorkingDays.includes(day.value) && (
+                          {hoursWorkingDays.includes(day.value) && (
                             <input
                               type="number"
                               min="0"
@@ -917,7 +925,7 @@ const CalendrierPaie = () => {
                               placeholder="7h"
                             />
                           )}
-                          {weeklyWorkingDays.includes(day.value) && (
+                          {hoursWorkingDays.includes(day.value) && (
                             <span className="text-sm text-gray-500">heures</span>
                           )}
                         </div>
@@ -926,7 +934,7 @@ const CalendrierPaie = () => {
                   </div>
                   <div className="text-xs text-gray-500 mt-2">
                     Total hebdomadaire : {
-                      weeklyWorkingDays.reduce((total, day) => {
+                      hoursWorkingDays.reduce((total: number, day: number) => {
                         return total + (dailyHoursSchedule[`default-${day}`] || 7);
                       }, 0)
                     }h
@@ -984,6 +992,33 @@ const CalendrierPaie = () => {
               )}
             </div>
 
+            {/* Liste des absences avec possibilité de suppression */}
+            {selectedAbsenceDates.length > 0 && (
+              <div className="bg-red-50 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-red-800 mb-2">Absences sélectionnées :</h4>
+                <div className="space-y-1">
+                  {selectedAbsenceDates.map((dateKey) => {
+                    const date = new Date(dateKey);
+                    return (
+                      <div key={dateKey} className="flex items-center justify-between bg-white p-2 rounded">
+                        <span className="text-sm">
+                          {date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedAbsenceDates(selectedAbsenceDates.filter(d => d !== dateKey))}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex justify-end gap-2">
               <Button 
@@ -991,6 +1026,9 @@ const CalendrierPaie = () => {
                 onClick={() => {
                   setSelectedAbsenceDates([]);
                   setDailyHoursSchedule({});
+                  // Réinitialiser les deux modes séparément
+                  setDaysWorkingDays([1, 2, 3, 4, 5]);
+                  setHoursWorkingDays([1, 2, 3, 4, 5]);
                 }}
               >
                 Réinitialiser
