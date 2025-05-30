@@ -244,7 +244,7 @@ const CalendrierPaie = () => {
       nextDay.setDate(nextDay.getDate() + 1);
       const dateString = normalizeDate(nextDay);
       const dayOfWeek = nextDay.getDay();
-      if (!restDays.includes(dayOfWeek) && !joursFeries2025[dateString] && dayOfWeek !== nonWorkingDay) {
+      if (!restDays.includes(dayOfWeek) && !getHolidaysForYear(nextDay.getFullYear())[dateString] && dayOfWeek !== nonWorkingDay) {
         return nextDay;
       }
     } while (true);
@@ -255,7 +255,7 @@ const CalendrierPaie = () => {
     const dateString = normalizeDate(date);
     const dayOfWeek = date.getDay();
 
-    if (dayOfWeek === 0 || dayOfWeek === 6 || joursFeries2025[dateString]) {
+    if (dayOfWeek === 0 || dayOfWeek === 6 || getHolidaysForYear(year)[dateString]) {
       return getNextWorkingDay(date);
     }
     return date;
@@ -341,7 +341,7 @@ const CalendrierPaie = () => {
       if (delayType === 'retractation') {
         const dateString = normalizeDate(result);
         const dayOfWeek = result.getDay();
-        if (dayOfWeek === nonWorkingDay || joursFeries2025[dateString]) {
+        if (dayOfWeek === nonWorkingDay || getHolidaysForYear(result.getFullYear())[dateString]) {
           return getNextWorkingDay(result, restDays, nonWorkingDay);
         }
       }
@@ -354,7 +354,7 @@ const CalendrierPaie = () => {
       const dayOfWeek = result.getDay();
 
       if (type === 'ouvré') {
-        if (!restDays.includes(dayOfWeek) && !joursFeries2025[dateString]) {
+        if (!restDays.includes(dayOfWeek) && !getHolidaysForYear(result.getFullYear())[dateString]) {
           remainingDays--;
         }
       } else if (type === 'ouvrable') {
@@ -619,7 +619,7 @@ const CalendrierPaie = () => {
             </div>
             {isFerie && (
               <div className="text-xs text-blue-500 font-figtree mb-1">
-                {joursFeries2025[dateString]}
+                {getHolidaysForYear(date.getFullYear())[dateString]}
               </div>
             )}
             {echeancesDuJour.map((echeance, idx) => (
@@ -735,7 +735,7 @@ const CalendrierPaie = () => {
           const dayOfWeek = date.getDay();
           const dateKey = formatDateKey(calcYear, calcMonth, day);
           
-          if (workingDays.includes(dayOfWeek) && !joursFeries2025[dateKey]) {
+          if (workingDays.includes(dayOfWeek) && !getHolidaysForYear(calcYear)[dateKey]) {
             theoricalDays++;
           }
         }
@@ -772,7 +772,7 @@ const CalendrierPaie = () => {
           const dayOfWeek = date.getDay();
           const dateKey = formatDateKey(calcYear, calcMonth, day);
           
-          if (workingDays.includes(dayOfWeek) && !joursFeries2025[dateKey]) {
+          if (workingDays.includes(dayOfWeek) && !getHolidaysForYear(calcYear)[dateKey]) {
             // Utiliser les heures spécifiques du jour ou les heures par défaut du jour de la semaine
             const defaultHours = dailyHoursSchedule[`default-${dayOfWeek}`] || 7;
             const hours = dailyHoursSchedule[dateKey] || defaultHours;
@@ -825,7 +825,7 @@ const CalendrierPaie = () => {
         const date = new Date(calcYear, calcMonth, day);
         const dayOfWeek = date.getDay();
         const workingDays = calculatorMode === 'days' ? daysWorkingDays : hoursWorkingDays;
-        const isWorkingDay = workingDays.includes(dayOfWeek) && !joursFeries2025[dateKey];
+        const isWorkingDay = workingDays.includes(dayOfWeek) && !getHolidaysForYear(calcYear)[dateKey];
         const defaultHours = dailyHoursSchedule[`default-${dayOfWeek}`] || 7;
 
         days.push(
