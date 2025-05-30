@@ -148,6 +148,12 @@ const CalendrierPaie = () => {
   const [customRestDays, setCustomRestDays] = useState<number[]>([6, 0]); // Samedi et Dimanche par défaut
   const [customNonWorkingDay, setCustomNonWorkingDay] = useState<number | null>(0); // Dimanche par défaut
   const [showRealDaysCalculator, setShowRealDaysCalculator] = useState(false);
+  const [calculatorMode, setCalculatorMode] = useState<'days' | 'hours'>('days');
+  const [workingDaysPerMonth, setWorkingDaysPerMonth] = useState(22);
+  const [dailyHoursSchedule, setDailyHoursSchedule] = useState<{[key: string]: number}>({});
+  const [selectedAbsenceDates, setSelectedAbsenceDates] = useState<string[]>([]);
+  const [calcMonth, setCalcMonth] = useState(selectedDate.getMonth());
+  const [calcYear, setCalcYear] = useState(selectedDate.getFullYear());
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -486,7 +492,7 @@ const CalendrierPaie = () => {
             <div 
               className="bg-gradient-to-br from-blue-50 to-white p-4 rounded-lg border border-blue-100 cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => {
-                alert("Calculateur de jours/heures réels - Fonctionnalité en cours de développement");
+                setShowRealDaysCalculator(true);
               }}
             >
               <div className="flex items-center justify-between">
@@ -601,8 +607,274 @@ const CalendrierPaie = () => {
     );
   };
 
+  const renderRealDaysCalculator = () => {
+    const getDaysInMonth = (year: number, month: number) => {
+      return new Date(year, month + 1, 0).getDate();
+    };
 
+    const formatDateKey = (year: number, month: number, day: number) => {
+      return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    };
 
+    const isAbsenceDate = (dateKey: string) => {
+      return selectedAbsenceDates.includes(dateKey);
+    };
+
+    const toggleAbsenceDate = (dateKey: string) => {
+      if (selectedAbsenceDates.includes(dateKey)) {
+        setSelectedAbsenceDates(selectedAbsenceDates.filter(d => d !== dateKey));
+      } else {
+        setSelectedAbsenceDates([...selectedAbsenceDates, dateKey]);
+      }
+    };
+
+    const setDailyHours = (dateKey: string, hours: number) => {
+      setDailyHoursSchedule({
+        ...dailyHoursSchedule,
+        [dateKey]: hours
+      });
+    };
+
+    const calculateResults = () => {
+      if (calculatorMode === 'days') {
+        const realDays = workingDaysPerMonth - selectedAbsenceDates.length;
+        return {
+          totalDays: workingDaysPerMonth,
+          realDays: realDays,
+          absenceDays: selectedAbsenceDates.length
+        };
+      } else {
+        const daysInMonth = getDaysInMonth(calcYear, calcMonth);
+        let totalHours = 0;
+        let absenceHours = 0;
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateKey = formatDateKey(calcYear, calcMonth, day);
+          const hours = dailyHoursSchedule[dateKey] || 0;
+          totalHours += hours;
+          
+          if (selectedAbsenceDates.includes(dateKey)) {
+            absenceHours += hours;
+          }
+        }
+
+        return {
+          totalHours: totalHours,
+          realHours: totalHours - absenceHours,
+          absenceHours: absenceHours
+        };
+      }
+    };
+
+    const results = calculateResults();
+
+    const renderCalendarGrid = () => {
+      const daysInMonth = getDaysInMonth(calcYear, calcMonth);
+      const firstDay = new Date(calcYear, calcMonth, 1).getDay();
+      const startDay = firstDay === 0 ? 6 : firstDay - 1; // Lundi = 0
+
+      const days = [];
+      
+      // Jours vides au début
+      for (let i = 0; i < startDay; i++) {
+        days.push(<div key={`empty-${i}`} className="p-2"></div>);
+      }
+
+      // Jours du mois
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateKey = formatDateKey(calcYear, calcMonth, day);
+        const isAbsence = isAbsenceDate(dateKey);
+        const currentHours = dailyHoursSchedule[dateKey] || 0;
+
+        days.push(
+          <div
+            key={day}
+            className={cn(
+              "p-2 border rounded cursor-pointer transition-colors",
+              isAbsence ? "bg-red-100 border-red-300" : "bg-white border-gray-200 hover:border-blue-300"
+            )}
+            onClick={() => toggleAbsenceDate(dateKey)}
+          >
+            <div className="text-center">
+              <div className="font-medium">{day}</div>
+              {calculatorMode === 'hours' && (
+                <input
+                  type="number"
+                  min="0"
+                  max="24"
+                  step="0.5"
+                  value={currentHours}
+                  onChange={(e) => setDailyHours(dateKey, parseFloat(e.target.value) || 0)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full mt-1 text-xs text-center border rounded"
+                  placeholder="0h"
+                />
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="grid grid-cols-7 gap-1">
+          {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
+            <div key={day} className="p-2 text-center font-medium text-gray-500 text-sm">
+              {day}
+            </div>
+          ))}
+          {days}
+        </div>
+      );
+    };
+
+    return (
+      <Dialog open={showRealDaysCalculator} onOpenChange={setShowRealDaysCalculator}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Calcul des jours et heures réels</DialogTitle>
+            <DialogDescription>
+              Choisissez le type de calcul et configurez les paramètres
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Sélection du mode */}
+            <div className="flex gap-4">
+              <button
+                onClick={() => setCalculatorMode('days')}
+                className={cn(
+                  "px-4 py-2 rounded-lg border transition-colors",
+                  calculatorMode === 'days' 
+                    ? "bg-blue-100 border-blue-300 text-blue-700" 
+                    : "bg-gray-50 border-gray-200"
+                )}
+              >
+                Calcul des jours réels
+              </button>
+              <button
+                onClick={() => setCalculatorMode('hours')}
+                className={cn(
+                  "px-4 py-2 rounded-lg border transition-colors",
+                  calculatorMode === 'hours' 
+                    ? "bg-blue-100 border-blue-300 text-blue-700" 
+                    : "bg-gray-50 border-gray-200"
+                )}
+              >
+                Calcul des heures réelles
+              </button>
+            </div>
+
+            {/* Sélection du mois */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Mois</label>
+                <select 
+                  value={calcMonth}
+                  onChange={(e) => setCalcMonth(parseInt(e.target.value))}
+                  className="w-full p-2 border rounded-md"
+                >
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <option key={i} value={i}>
+                      {new Date(2025, i, 1).toLocaleDateString('fr-FR', { month: 'long' })}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Année</label>
+                <input
+                  type="number"
+                  value={calcYear}
+                  onChange={(e) => setCalcYear(parseInt(e.target.value))}
+                  className="w-full p-2 border rounded-md"
+                />
+              </div>
+            </div>
+
+            {/* Configuration spécifique au mode */}
+            {calculatorMode === 'days' && (
+              <div>
+                <label className="text-sm font-medium">Nombre de jours travaillés dans le mois</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="31"
+                  value={workingDaysPerMonth}
+                  onChange={(e) => setWorkingDaysPerMonth(parseInt(e.target.value) || 0)}
+                  className="w-full p-2 border rounded-md mt-1"
+                />
+              </div>
+            )}
+
+            {/* Calendrier pour les absences */}
+            <div>
+              <h3 className="text-sm font-medium mb-2">
+                {calculatorMode === 'days' 
+                  ? "Sélectionnez les jours d'absence (clic sur les dates)" 
+                  : "Saisissez les heures par jour et marquez les absences (clic sur les dates)"}
+              </h3>
+              {renderCalendarGrid()}
+              <p className="text-xs text-gray-500 mt-2">
+                Dates d'absence sélectionnées : {selectedAbsenceDates.length}
+              </p>
+            </div>
+
+            {/* Résultats */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-medium text-gray-900 mb-3">Résultats</h3>
+              {calculatorMode === 'days' ? (
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-gray-600 text-sm">Jours théoriques</div>
+                    <div className="text-2xl font-bold text-blue-600">{results.totalDays}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Jours réels</div>
+                    <div className="text-2xl font-bold text-green-600">{results.realDays}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Jours d'absence</div>
+                    <div className="text-2xl font-bold text-red-600">{results.absenceDays}</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-gray-600 text-sm">Heures théoriques</div>
+                    <div className="text-2xl font-bold text-blue-600">{results.totalHours}h</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Heures réelles</div>
+                    <div className="text-2xl font-bold text-green-600">{results.realHours}h</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Heures d'absence</div>
+                    <div className="text-2xl font-bold text-red-600">{results.absenceHours}h</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSelectedAbsenceDates([]);
+                  setDailyHoursSchedule({});
+                }}
+              >
+                Réinitialiser
+              </Button>
+              <Button variant="outline" onClick={() => setShowRealDaysCalculator(false)}>
+                Fermer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
     const renderDelayForm = () => (
     <Form {...form}>
@@ -983,7 +1255,7 @@ const CalendrierPaie = () => {
           {viewMode === 'year' ? renderAnnualView() : renderMonthView()}
         </AnimatePresence>
 
-
+        {renderRealDaysCalculator()}
       </div>
     </>
   );
