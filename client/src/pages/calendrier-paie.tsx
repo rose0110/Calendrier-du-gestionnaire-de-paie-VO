@@ -179,6 +179,7 @@ const DAYS_OF_WEEK: DayOfWeek[] = [
 
 const CalendrierPaie = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [viewMode, setViewMode] = useState('year');
   const calculatedDayRef = useRef<HTMLDivElement>(null);
   const [showHelpAlert, setShowHelpAlert] = useState(true);
@@ -400,11 +401,11 @@ const CalendrierPaie = () => {
 
   const renderAnnualView = () => {
     const months = Array.from({ length: 12 }, (_, i) => {
-      const date = new Date(selectedDate.getFullYear(), i, 1);
-      const { workDays, workableDays } = calculateWorkDays(selectedDate.getFullYear(), i);
+      const date = new Date(selectedYear, i, 1);
+      const { workDays, workableDays } = calculateWorkDays(selectedYear, i);
 
-      const feriesDuMois = Object.entries(getHolidaysForYear(selectedDate.getFullYear()))
-        .filter(([date]) => date.startsWith(`${selectedDate.getFullYear()}-${String(i + 1).padStart(2, '0')}`))
+      const feriesDuMois = Object.entries(getHolidaysForYear(selectedYear))
+        .filter(([date]) => date.startsWith(`${selectedYear}-${String(i + 1).padStart(2, '0')}`))
         .map(([date, label]) => {
           const jourFerie = new Date(date);
           return {
@@ -414,10 +415,10 @@ const CalendrierPaie = () => {
           };
         });
 
-      const dsn50Plus = calculateDSNDate(date.getFullYear(), i, 5);
-      const dsnMoins50 = calculateDSNDate(date.getFullYear(), i, 15);
+      const dsn50Plus = calculateDSNDate(selectedYear, i, 5);
+      const dsnMoins50 = calculateDSNDate(selectedYear, i, 15);
 
-      const echeancesDuMois = getEcheancesPaie(selectedDate.getFullYear(), i);
+      const echeancesDuMois = getEcheancesPaie(selectedYear, i);
 
       return (
         <motion.div
@@ -1533,12 +1534,29 @@ const CalendrierPaie = () => {
           )}
 
           <div className="flex-1 text-center">
-            <h2 className="text-2xl font-bold text-gray-800">
-              {viewMode === 'year'
-                ? "2025"
-                : `${selectedDate.toLocaleDateString('fr-FR', { month: 'long' })} 2025`
-              }
-            </h2>
+            {viewMode === 'year' ? (
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={() => setSelectedYear(selectedYear - 1)}
+                  className="p-2 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow"
+                >
+                  <ChevronLeft className="h-5 w-5 text-gray-600" />
+                </button>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  {selectedYear}
+                </h2>
+                <button
+                  onClick={() => setSelectedYear(selectedYear + 1)}
+                  className="p-2 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow"
+                >
+                  <ChevronRight className="h-5 w-5 text-gray-600" />
+                </button>
+              </div>
+            ) : (
+              <h2 className="text-2xl font-bold text-gray-800">
+                {`${selectedDate.toLocaleDateString('fr-FR', { month: 'long' })} ${selectedYear}`}
+              </h2>
+            )}
           </div>
 
           {viewMode === 'month' && (
