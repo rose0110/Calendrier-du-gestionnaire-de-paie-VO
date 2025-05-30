@@ -476,18 +476,7 @@ const CalendrierPaie = () => {
                   <div className="text-sm font-medium text-gray-600 font-figtree">Jours ouvrés</div>
                   <div className="text-2xl font-bold text-[#42D80F] font-figtree">{workDays}</div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    form.setValue("type", "ouvré");
-                    setShowCustomDaysDialog(true);
-                  }}
-                   className="text-orange-600 hover:text-orange-700 hover:bg-orange-100"
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Calcul personnalisé
-                </Button>
+
               </div>
             </div>
             <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-lg border border-gray-100">
@@ -496,18 +485,7 @@ const CalendrierPaie = () => {
                   <div className="text-sm font-medium text-gray-600 font-figtree">Jours ouvrables</div>
                   <div className="text-2xl font-bold text-[#42D80F] font-figtree">{workableDays}</div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    form.setValue("type", "ouvrable");
-                    setShowCustomDaysDialog(true);
-                  }}
-                   className="text-orange-600 hover:text-orange-700 hover:bg-orange-100"
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Calcul personnalisé
-                </Button>
+
               </div>
             </div>
           </div>
@@ -613,89 +591,7 @@ const CalendrierPaie = () => {
       </ContextMenu>
     );
   };
-    const renderCustomDaysDialog = () => {
-      return (
-        <Dialog open={showCustomDaysDialog} onOpenChange={setShowCustomDaysDialog}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {form.watch("type") === "ouvré" 
-                  ? "Personnaliser les jours de repos" 
-                  : "Personnaliser le jour non travaillé"}
-              </DialogTitle>
-            </DialogHeader>
 
-            {form.watch("type") === "ouvré" ? (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Sélectionnez deux jours de repos</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {DAYS_OF_WEEK.map((day) => (
-                      <div
-                        key={day.value}
-                        className={cn(
-                          "p-2 rounded-md border cursor-pointer transition-colors",
-                          customRestDays.includes(day.value)
-                            ? "bg-orange-100 border-orange-500 text-orange-700"
-                            : "border-gray-200 hover:border-orange-500/50"
-                        )}
-                        onClick={() => {
-                          if (customRestDays.includes(day.value)) {
-                            setCustomRestDays(customRestDays.filter(d => d !== day.value));
-                          } else if (customRestDays.length < 2) {
-                            setCustomRestDays([...customRestDays, day.value]);
-                          }
-                        }}
-                      >
-                        {day.label}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Sélectionnez le jour non travaillé</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {DAYS_OF_WEEK.map((day) => (
-                      <div
-                        key={day.value}
-                        className={cn(
-                          "p-2 rounded-md border cursor-pointer transition-colors",
-                          customNonWorkingDay === day.value
-                            ? "bg-orange-100 border-orange-500 text-orange-700"
-                            : "border-gray-200 hover:border-orange-500/50"
-                        )}
-                        onClick={() => setCustomNonWorkingDay(day.value)}
-                      >
-                        {day.label}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2 mt-4">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowCustomDaysDialog(false)}
-              >
-                Annuler
-              </Button>
-              <Button
-                variant="default"
-                className="bg-orange-500 hover:bg-orange-600 text-white"
-                onClick={() => setShowCustomDaysDialog(false)}
-              >
-                Valider
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      );
-    };
 
     const renderDelayForm = () => (
     <Form {...form}>
