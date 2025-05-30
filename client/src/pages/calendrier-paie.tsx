@@ -920,13 +920,13 @@ const CalendrierPaie = () => {
                  {calculatedDate.customRestDays && (
                   <div className="text-sm text-gray-600">
                     Jours de repos : {calculatedDate.customRestDays.map(day => 
-                      DAYS_OF_WEEK[day].label
+                      DAYS_OF_WEEK.find(d => d.value === day)?.label || 'Inconnu'
                     ).join(', ')}
                   </div>
                 )}
                 {calculatedDate.nonWorkingDay !== undefined && (
                   <div className="text-sm text-gray-600">
-                    Jour non travaillé : {DAYS_OF_WEEK[calculatedDate.nonWorkingDay].label}
+                    Jour non travaillé : {DAYS_OF_WEEK.find(d => d.value === calculatedDate.nonWorkingDay)?.label || 'Inconnu'}
                   </div>
                 )}
                 <div className="font-medium text-gray-900">
