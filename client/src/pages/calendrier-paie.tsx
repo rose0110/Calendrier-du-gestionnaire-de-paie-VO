@@ -104,9 +104,7 @@ const formSchema = z.object({
   type: z.enum(['calendaire', 'ouvré', 'ouvrable'], {
     required_error: "Veuillez sélectionner un type de délai"
   }),
-  delayType: z.enum(['retractation', 'subrogation'], {
-    required_error: "Veuillez sélectionner le type de calcul"
-  }),
+  delayType: z.enum(['retractation', 'subrogation']).optional(),
   carenceDays: z.number().min(0).optional(),
   customRestDays: z.array(z.number()).optional(),
   nonWorkingDay: z.number().optional(),
@@ -139,7 +137,7 @@ const CalendrierPaie = () => {
     startDate: Date;
     days: number;
     type: 'calendaire' | 'ouvré' | 'ouvrable';
-    delayType: 'retractation' | 'subrogation';
+    delayType?: 'retractation' | 'subrogation';
     carenceDays: number;
     customRestDays?: number[];
     nonWorkingDay?: number;
@@ -156,8 +154,6 @@ const CalendrierPaie = () => {
     defaultValues: {
       days: 1,
       carenceDays: 0,
-      type: 'calendaire',
-      delayType: 'retractation',
     },
   });
 
@@ -258,7 +254,7 @@ const CalendrierPaie = () => {
     startDate: Date,
     days: number,
     type: 'calendaire' | 'ouvré' | 'ouvrable',
-    delayType: 'retractation' | 'subrogation',
+    delayType: 'retractation' | 'subrogation' | undefined,
     carenceDays: number = 0,
     restDays: number[] = [6, 0],
     nonWorkingDay: number = 0
@@ -317,7 +313,7 @@ const CalendrierPaie = () => {
       currentDate,
       values.days,
       values.type,
-      values.delayType,
+      values.delayType || 'retractation',
       values.carenceDays || 0,
       finalRestDays,
       finalNonWorkingDay
