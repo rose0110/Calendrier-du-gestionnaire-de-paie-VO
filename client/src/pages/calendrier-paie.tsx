@@ -159,6 +159,9 @@ const CalendrierPaie = () => {
   const [hoursWorkingDays, setHoursWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]); // Pour mode heures
   const [weeklyHours, setWeeklyHours] = useState(35);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  // Gestion des jours fériés
+  const [holidayStatus, setHolidayStatus] = useState<{[key: string]: 'worked' | 'paid' | 'unpaid'}>({});
+  const [holidayHours, setHolidayHours] = useState<{[key: string]: number}>({});
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -655,13 +658,26 @@ const CalendrierPaie = () => {
       });
     };
 
+    const getHolidaysInMonth = () => {
+      return Object.entries(joursFeries2025)
+        .filter(([dateKey]) => {
+          const [year, month] = dateKey.split('-').map(Number);
+          return year === calcYear && month === calcMonth + 1;
+        })
+        .map(([dateKey, label]) => ({ dateKey, label }));
+    };
+
     const calculateResults = () => {
       const workingDays = calculatorMode === 'days' ? daysWorkingDays : hoursWorkingDays;
+      const holidaysInMonth = getHolidaysInMonth();
       
       if (calculatorMode === 'days') {
         // Calculer les jours théoriques basés sur les jours travaillés de la semaine
         const daysInMonth = getDaysInMonth(calcYear, calcMonth);
         let theoricalDays = 0;
+        let holidayWorkedDays = 0;
+        let holidayPaidDays = 0;
+        let holidayUnpaidDays = 0;
         
         for (let day = 1; day <= daysInMonth; day++) {
           const date = new Date(calcYear, calcMonth, day);
@@ -672,18 +688,33 @@ const CalendrierPaie = () => {
             theoricalDays++;
           }
         }
+
+        // Compter les jours fériés selon leur statut
+        holidaysInMonth.forEach(({ dateKey }) => {
+          const status = holidayStatus[dateKey] || 'paid'; // Par défaut chômé payé
+          if (status === 'worked') holidayWorkedDays++;
+          else if (status === 'paid') holidayPaidDays++;
+          else holidayUnpaidDays++;
+        });
         
-        const realDays = theoricalDays - selectedAbsenceDates.length;
+        const totalWorkedDays = theoricalDays + holidayWorkedDays - selectedAbsenceDates.length;
+        const totalPaidDays = totalWorkedDays + holidayPaidDays;
+        
         return {
           totalDays: theoricalDays,
-          realDays: realDays,
-          absenceDays: selectedAbsenceDates.length
+          realDays: totalWorkedDays,
+          absenceDays: selectedAbsenceDates.length,
+          holidayWorkedDays,
+          holidayPaidDays,
+          holidayUnpaidDays,
+          totalPaidDays
         };
       } else {
         // Calculer les heures basées sur les horaires jour par jour
         const daysInMonth = getDaysInMonth(calcYear, calcMonth);
         let totalHours = 0;
         let absenceHours = 0;
+        let holidayWorkedHours = 0;
 
         for (let day = 1; day <= daysInMonth; day++) {
           const date = new Date(calcYear, calcMonth, day);
@@ -702,10 +733,20 @@ const CalendrierPaie = () => {
           }
         }
 
+        // Ajouter les heures des jours fériés travaillés
+        holidaysInMonth.forEach(({ dateKey }) => {
+          const status = holidayStatus[dateKey] || 'paid';
+          if (status === 'worked') {
+            holidayWorkedHours += holidayHours[dateKey] || 0;
+          }
+        });
+
         return {
           totalHours: Math.round(totalHours * 10) / 10,
           realHours: Math.round((totalHours - absenceHours) * 10) / 10,
-          absenceHours: Math.round(absenceHours * 10) / 10
+          absenceHours: Math.round(absenceHours * 10) / 10,
+          holidayWorkedHours: Math.round(holidayWorkedHours * 10) / 10,
+          totalWorkedHours: Math.round((totalHours - absenceHours + holidayWorkedHours) * 10) / 10
         };
       }
     };
@@ -819,6 +860,10 @@ const CalendrierPaie = () => {
                 Calcul des heures réelles
               </button>
             </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              {/* Configuration principale à gauche */}
+              <div className="space-y-4">
 
             {/* Bouton pour options avancées */}
             <div className="text-center">
@@ -940,6 +985,69 @@ const CalendrierPaie = () => {
                 </div>
               </div>
             )}
+              </div>
+
+              {/* Gestion des jours fériés à droite */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Jours fériés du mois</h3>
+                {getHolidaysInMonth().length > 0 ? (
+                  <div className="space-y-3">
+                    {getHolidaysInMonth().map(({ dateKey, label }) => {
+                      const status = holidayStatus[dateKey] || 'paid';
+                      return (
+                        <div key={dateKey} className="p-3 border rounded-lg bg-gray-50">
+                          <div className="font-medium text-sm mb-2">{label}</div>
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => setHolidayStatus({ ...holidayStatus, [dateKey]: 'worked' })}
+                                className={cn(
+                                  "px-2 py-1 text-xs rounded border",
+                                  status === 'worked' ? "bg-green-100 border-green-300 text-green-700" : "bg-white border-gray-200"
+                                )}
+                              >
+                                Travaillé
+                              </button>
+                              <button
+                                onClick={() => setHolidayStatus({ ...holidayStatus, [dateKey]: 'paid' })}
+                                className={cn(
+                                  "px-2 py-1 text-xs rounded border",
+                                  status === 'paid' ? "bg-blue-100 border-blue-300 text-blue-700" : "bg-white border-gray-200"
+                                )}
+                              >
+                                Chômé payé
+                              </button>
+                              <button
+                                onClick={() => setHolidayStatus({ ...holidayStatus, [dateKey]: 'unpaid' })}
+                                className={cn(
+                                  "px-2 py-1 text-xs rounded border",
+                                  status === 'unpaid' ? "bg-red-100 border-red-300 text-red-700" : "bg-white border-gray-200"
+                                )}
+                              >
+                                Chômé non payé
+                              </button>
+                            </div>
+                            {status === 'worked' && calculatorMode === 'hours' && (
+                              <input
+                                type="number"
+                                min="0"
+                                max="24"
+                                step="0.5"
+                                value={holidayHours[dateKey] || ''}
+                                onChange={(e) => setHolidayHours({ ...holidayHours, [dateKey]: parseFloat(e.target.value) || 0 })}
+                                className="w-20 p-1 text-sm border rounded"
+                              />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">Aucun jour férié ce mois-ci</div>
+                )}
+              </div>
+            </div>
 
             {/* Calendrier pour les absences */}
             <div>
@@ -979,8 +1087,16 @@ const CalendrierPaie = () => {
                     <div className="text-2xl font-bold text-blue-600">{results.totalHours}h</div>
                   </div>
                   <div>
-                    <div className="text-gray-600 text-sm">Heures réelles</div>
-                    <div className="text-2xl font-bold text-green-600">{results.realHours}h</div>
+                    <div className="text-gray-600 text-sm">Total travaillées</div>
+                    <div className="text-2xl font-bold text-green-600">{results.totalWorkedHours}h</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Heures fériés</div>
+                    <div className="text-2xl font-bold text-yellow-600">{results.holidayWorkedHours}h</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Heures normales</div>
+                    <div className="text-2xl font-bold text-green-500">{results.realHours}h</div>
                   </div>
                   <div>
                     <div className="text-gray-600 text-sm">Heures d'absence</div>
@@ -1024,6 +1140,8 @@ const CalendrierPaie = () => {
                 onClick={() => {
                   setSelectedAbsenceDates([]);
                   setDailyHoursSchedule({});
+                  setHolidayStatus({});
+                  setHolidayHours({});
                   // Réinitialiser les deux modes séparément
                   setDaysWorkingDays([1, 2, 3, 4, 5]);
                   setHoursWorkingDays([1, 2, 3, 4, 5]);
