@@ -335,7 +335,7 @@ const CalendrierPaie = () => {
       delayType: values.delayType,
       carenceDays: values.carenceDays || 0,
       customRestDays: values.type === 'ouvré' ? customRestDays : undefined,
-      nonWorkingDay: values.type === 'ouvrable' ? (customNonWorkingDay ?? undefined) : undefined
+      nonWorkingDay: values.type === 'ouvrable' && customNonWorkingDay !== null ? customNonWorkingDay : undefined
     });
 
     setIsDelayDialogOpen(false);
