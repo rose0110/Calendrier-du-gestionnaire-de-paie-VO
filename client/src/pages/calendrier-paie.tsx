@@ -1527,6 +1527,7 @@ const CalendrierPaie = () => {
                 const newDate = new Date(selectedDate);
                 newDate.setMonth(selectedDate.getMonth() - 1);
                 setSelectedDate(newDate);
+                setSelectedYear(newDate.getFullYear());
               }}
             >
               <ChevronLeft className="h-6 w-6 text-gray-600" />
@@ -1583,6 +1584,7 @@ const CalendrierPaie = () => {
                   const newDate = new Date(selectedDate);
                   newDate.setMonth(selectedDate.getMonth() + 1);
                   setSelectedDate(newDate);
+                  setSelectedYear(newDate.getFullYear());
                 }}
               >
                 <ChevronRight className="h-6 w-6 text-gray-600" />
