@@ -755,18 +755,8 @@ const CalendrierPaie = () => {
                   min="0"
                   max="24"
                   step="0.5"
-                  value={dailyHoursSchedule[dateKey] !== undefined ? dailyHoursSchedule[dateKey] : defaultHours}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === '') {
-                      // Supprimer complètement l'entrée quand c'est vide
-                      const newSchedule = {...dailyHoursSchedule};
-                      delete newSchedule[dateKey];
-                      setDailyHoursSchedule(newSchedule);
-                    } else {
-                      setDailyHours(dateKey, parseFloat(value) || 0);
-                    }
-                  }}
+                  value={dailyHoursSchedule[dateKey] || ''}
+                  onChange={(e) => setDailyHours(dateKey, parseFloat(e.target.value) || 0)}
                   onClick={(e) => e.stopPropagation()}
                   className="w-full mt-1 text-xs text-center border rounded"
                   placeholder={`${defaultHours}h`}
@@ -929,18 +919,8 @@ const CalendrierPaie = () => {
                               min="0"
                               max="24"
                               step="0.5"
-                              value={dailyHoursSchedule[`default-${day.value}`] !== undefined ? dailyHoursSchedule[`default-${day.value}`] : 7}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                if (value === '') {
-                                  // Supprimer complètement l'entrée quand c'est vide
-                                  const newSchedule = {...dailyHoursSchedule};
-                                  delete newSchedule[`default-${day.value}`];
-                                  setDailyHoursSchedule(newSchedule);
-                                } else {
-                                  setDailyHours(`default-${day.value}`, parseFloat(value) || 0);
-                                }
-                              }}
+                              value={dailyHoursSchedule[`default-${day.value}`] || ''}
+                              onChange={(e) => setDailyHours(`default-${day.value}`, parseFloat(e.target.value) || 0)}
                               className="w-20 p-1 text-sm border rounded"
                               placeholder="7h"
                             />
