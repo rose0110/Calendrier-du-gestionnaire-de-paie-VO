@@ -855,7 +855,7 @@ const CalendrierPaie = () => {
               )}
               {!isWorkingDay && (
                 <div className="text-xs text-gray-400 mt-1">
-                  {joursFeries2025[dateKey] ? 'Férié' : 'Repos'}
+                  {getHolidaysForYear(calcYear)[dateKey] ? 'Férié' : 'Repos'}
                 </div>
               )}
             </div>
