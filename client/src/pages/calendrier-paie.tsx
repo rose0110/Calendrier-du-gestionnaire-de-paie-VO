@@ -435,41 +435,30 @@ const CalendrierPaie = () => {
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth();
     
-    // Memoize month calculations
-    const { daysInMonth, firstDayOfMonth, workDays, workableDays, echeances } = useMemo(() => {
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const firstDay = new Date(year, month, 1).getDay();
-      const firstDayOfMonth = firstDay === 0 ? 6 : firstDay - 1;
-      const { workDays, workableDays } = calculateWorkDays(year, month);
-      const echeances = getEcheancesPaie(year, month);
-      
-      return { daysInMonth, firstDayOfMonth, workDays, workableDays, echeances };
-    }, [year, month, calculateWorkDays, getEcheancesPaie]);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDay = new Date(year, month, 1).getDay();
+    const firstDayOfMonth = firstDay === 0 ? 6 : firstDay - 1;
+    const { workDays, workableDays } = calculateWorkDays(year, month);
+    const echeances = getEcheancesPaie(year, month);
 
-    // Memoize day components
-    const days = useMemo(() => {
-      return Array.from({ length: daysInMonth }, (_, i) => {
-        const date = new Date(year, month, i + 1);
-        const renderDayComponent = renderDay(date);
-        return (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.2, delay: i * 0.01 }}
-          >
-            {renderDayComponent}
-          </motion.div>
-        );
-      });
-    }, [year, month, daysInMonth, renderDay]);
+    const days = Array.from({ length: daysInMonth }, (_, i) => {
+      const date = new Date(year, month, i + 1);
+      const renderDayComponent = renderDay(date);
+      return (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.2, delay: i * 0.01 }}
+        >
+          {renderDayComponent}
+        </motion.div>
+      );
+    });
 
-    // Memoize empty cells
-    const emptyCells = useMemo(() => {
-      return Array.from({ length: firstDayOfMonth }, (_, i) => (
-        <div key={`empty-${i}`} className="p-2 border-0"></div>
-      ));
-    }, [firstDayOfMonth]);
+    const emptyCells = Array.from({ length: firstDayOfMonth }, (_, i) => (
+      <div key={`empty-${i}`} className="p-2 border-0"></div>
+    ));
 
     return (
       <Card className="border-[#42D80F]/10">
