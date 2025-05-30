@@ -147,8 +147,8 @@ const CalendrierPaie = () => {
   const [isDelayDialogOpen, setIsDelayDialogOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [showCustomDaysDialog, setShowCustomDaysDialog] = useState(false);
-  const [customRestDays, setCustomRestDays] = useState<number[]>([]);
-  const [customNonWorkingDay, setCustomNonWorkingDay] = useState<number | null>(null);
+  const [customRestDays, setCustomRestDays] = useState<number[]>([6, 0]); // Samedi et Dimanche par défaut
+  const [customNonWorkingDay, setCustomNonWorkingDay] = useState<number | null>(0); // Dimanche par défaut
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -156,6 +156,8 @@ const CalendrierPaie = () => {
     defaultValues: {
       days: 1,
       carenceDays: 0,
+      type: 'calendaire',
+      delayType: 'retractation',
     },
   });
 
@@ -748,21 +750,83 @@ const CalendrierPaie = () => {
                     <SelectItem value="ouvrable">Ouvrable</SelectItem>
                   </SelectContent>
                 </Select>
-                 {(field.value === 'ouvré' || field.value === 'ouvrable') && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setShowCustomDaysDialog(true)}
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                )}
+
               </div>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {form.watch("type") === "ouvré" && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Sélectionnez deux jours de repos</label>
+              <div className="grid grid-cols-2 gap-2">
+                {DAYS_OF_WEEK.map((day) => (
+                  <div
+                    key={day.value}
+                    className={cn(
+                      "flex items-center space-x-2 p-2 rounded cursor-pointer border",
+                      customRestDays.includes(day.value)
+                        ? "bg-orange-100 border-orange-300"
+                        : "bg-gray-50 border-gray-200"
+                    )}
+                    onClick={() => {
+                      if (customRestDays.includes(day.value)) {
+                        setCustomRestDays(customRestDays.filter(d => d !== day.value));
+                      } else if (customRestDays.length < 2) {
+                        setCustomRestDays([...customRestDays, day.value]);
+                      }
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={customRestDays.includes(day.value)}
+                      readOnly
+                      className="rounded"
+                    />
+                    <span className="text-sm">{day.label}</span>
+                  </div>
+                ))}
+              </div>
+              {customRestDays.length > 0 && (
+                <p className="text-xs text-gray-500">
+                  {customRestDays.length}/2 jours sélectionnés
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {form.watch("type") === "ouvrable" && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Sélectionnez le jour non travaillé</label>
+              <div className="grid grid-cols-2 gap-2">
+                {DAYS_OF_WEEK.map((day) => (
+                  <div
+                    key={day.value}
+                    className={cn(
+                      "flex items-center space-x-2 p-2 rounded cursor-pointer border",
+                      customNonWorkingDay === day.value
+                        ? "bg-orange-100 border-orange-300"
+                        : "bg-gray-50 border-gray-200"
+                    )}
+                    onClick={() => setCustomNonWorkingDay(day.value)}
+                  >
+                    <input
+                      type="radio"
+                      checked={customNonWorkingDay === day.value}
+                      readOnly
+                      className="rounded"
+                    />
+                    <span className="text-sm">{day.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {form.watch("type") === "calendaire" && (
           <FormField
@@ -928,7 +992,7 @@ const CalendrierPaie = () => {
         </DialogContent>
       </Dialog>
 
-      {renderCustomDaysDialog()}
+
 
 
 
