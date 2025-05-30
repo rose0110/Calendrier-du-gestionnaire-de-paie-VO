@@ -1072,8 +1072,20 @@ const CalendrierPaie = () => {
                     <div className="text-2xl font-bold text-blue-600">{results.totalDays}</div>
                   </div>
                   <div>
-                    <div className="text-gray-600 text-sm">Jours réels</div>
+                    <div className="text-gray-600 text-sm">Jours travaillés</div>
                     <div className="text-2xl font-bold text-green-600">{results.realDays}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Jours payés</div>
+                    <div className="text-2xl font-bold text-blue-500">{results.totalPaidDays}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Fériés travaillés</div>
+                    <div className="text-2xl font-bold text-yellow-600">{results.holidayWorkedDays}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Fériés payés</div>
+                    <div className="text-2xl font-bold text-blue-400">{results.holidayPaidDays}</div>
                   </div>
                   <div>
                     <div className="text-gray-600 text-sm">Jours d'absence</div>
