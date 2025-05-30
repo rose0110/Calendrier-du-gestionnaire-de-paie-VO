@@ -43,18 +43,68 @@ type JoursFeries = {
   [key: string]: string;
 };
 
-const joursFeries2025: JoursFeries = {
-  '2025-01-01': 'Jour de l\'An',
-  '2025-04-21': 'Lundi de Pâques',
-  '2025-05-01': 'Fête du Travail',
-  '2025-05-08': 'Victoire 1945',
-  '2025-05-29': 'Ascension',
-  '2025-06-09': 'Lundi de Pentecôte',
-  '2025-07-14': 'Fête Nationale',
-  '2025-08-15': 'Assomption',
-  '2025-11-01': 'Toussaint',
-  '2025-11-11': 'Armistice',
-  '2025-12-25': 'Noël'
+// Fonction pour calculer la date de Pâques (algorithme de Gauss)
+const calculateEaster = (year: number): Date => {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+};
+
+// Fonction pour générer tous les jours fériés d'une année donnée
+const generateHolidays = (year: number): JoursFeries => {
+  const holidays: JoursFeries = {};
+  
+  // Jours fériés fixes
+  holidays[`${year}-01-01`] = "Jour de l'An";
+  holidays[`${year}-05-01`] = "Fête du Travail";
+  holidays[`${year}-05-08`] = "Victoire 1945";
+  holidays[`${year}-07-14`] = "Fête Nationale";
+  holidays[`${year}-08-15`] = "Assomption";
+  holidays[`${year}-11-01`] = "Toussaint";
+  holidays[`${year}-11-11`] = "Armistice";
+  holidays[`${year}-12-25`] = "Noël";
+  
+  // Jours fériés variables basés sur Pâques
+  const easter = calculateEaster(year);
+  
+  // Lundi de Pâques (+1 jour)
+  const easterMonday = new Date(easter);
+  easterMonday.setDate(easter.getDate() + 1);
+  holidays[`${year}-${String(easterMonday.getMonth() + 1).padStart(2, '0')}-${String(easterMonday.getDate()).padStart(2, '0')}`] = "Lundi de Pâques";
+  
+  // Ascension (+39 jours)
+  const ascension = new Date(easter);
+  ascension.setDate(easter.getDate() + 39);
+  holidays[`${year}-${String(ascension.getMonth() + 1).padStart(2, '0')}-${String(ascension.getDate()).padStart(2, '0')}`] = "Ascension";
+  
+  // Lundi de Pentecôte (+50 jours)
+  const pentecostMonday = new Date(easter);
+  pentecostMonday.setDate(easter.getDate() + 50);
+  holidays[`${year}-${String(pentecostMonday.getMonth() + 1).padStart(2, '0')}-${String(pentecostMonday.getDate()).padStart(2, '0')}`] = "Lundi de Pentecôte";
+  
+  return holidays;
+};
+
+// Cache des jours fériés par année pour éviter de recalculer
+const holidayCache: { [year: number]: JoursFeries } = {};
+
+const getHolidaysForYear = (year: number): JoursFeries => {
+  if (!holidayCache[year]) {
+    holidayCache[year] = generateHolidays(year);
+  }
+  return holidayCache[year];
 };
 
 // Fonction pour normaliser une date (ignorer l'heure)
@@ -224,7 +274,7 @@ const CalendrierPaie = () => {
       if (dayOfWeek !== 0) {
         workableDays++;
       }
-      if (dayOfWeek !== 0 && dayOfWeek !== 6 && !joursFeries2025[dateString]) {
+      if (dayOfWeek !== 0 && dayOfWeek !== 6 && !getHolidaysForYear(year)[dateString]) {
         workDays++;
       }
     }
@@ -353,7 +403,7 @@ const CalendrierPaie = () => {
       const date = new Date(selectedDate.getFullYear(), i, 1);
       const { workDays, workableDays } = calculateWorkDays(selectedDate.getFullYear(), i);
 
-      const feriesDuMois = Object.entries(joursFeries2025)
+      const feriesDuMois = Object.entries(getHolidaysForYear(selectedDate.getFullYear()))
         .filter(([date]) => date.startsWith(`${selectedDate.getFullYear()}-${String(i + 1).padStart(2, '0')}`))
         .map(([date, label]) => {
           const jourFerie = new Date(date);
@@ -532,7 +582,7 @@ const CalendrierPaie = () => {
     const dateString = normalizeDate(date);
     const dayOfWeek = date.getDay();
     const isWeekend = dayOfWeek === 6 || dayOfWeek === 0;
-    const isFerie = joursFeries2025[dateString];
+    const isFerie = getHolidaysForYear(date.getFullYear())[dateString];
     const isCalculatedDate = calculatedDate &&
       normalizeDate(calculatedDate.date) === dateString;
     const isStartDate = calculatedDate &&
@@ -659,7 +709,8 @@ const CalendrierPaie = () => {
     };
 
     const getHolidaysInMonth = () => {
-      return Object.entries(joursFeries2025)
+      const holidays = getHolidaysForYear(calcYear);
+      return Object.entries(holidays)
         .filter(([dateKey]) => {
           const [year, month] = dateKey.split('-').map(Number);
           return year === calcYear && month === calcMonth + 1;
