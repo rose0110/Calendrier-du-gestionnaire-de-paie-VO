@@ -154,6 +154,9 @@ const CalendrierPaie = () => {
   const [selectedAbsenceDates, setSelectedAbsenceDates] = useState<string[]>([]);
   const [calcMonth, setCalcMonth] = useState(selectedDate.getMonth());
   const [calcYear, setCalcYear] = useState(selectedDate.getFullYear());
+  const [weeklyWorkingDays, setWeeklyWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]); // Lun-Ven par défaut
+  const [weeklyHours, setWeeklyHours] = useState(35);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -492,6 +495,8 @@ const CalendrierPaie = () => {
             <div 
               className="bg-gradient-to-br from-blue-50 to-white p-4 rounded-lg border border-blue-100 cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => {
+                setCalcMonth(selectedDate.getMonth());
+                setCalcYear(selectedDate.getFullYear());
                 setShowRealDaysCalculator(true);
               }}
             >
@@ -637,31 +642,52 @@ const CalendrierPaie = () => {
 
     const calculateResults = () => {
       if (calculatorMode === 'days') {
-        const realDays = workingDaysPerMonth - selectedAbsenceDates.length;
+        // Calculer les jours théoriques basés sur les jours travaillés de la semaine
+        const daysInMonth = getDaysInMonth(calcYear, calcMonth);
+        let theoricalDays = 0;
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+          const date = new Date(calcYear, calcMonth, day);
+          const dayOfWeek = date.getDay();
+          const dateKey = formatDateKey(calcYear, calcMonth, day);
+          
+          if (weeklyWorkingDays.includes(dayOfWeek) && !joursFeries2025[dateKey]) {
+            theoricalDays++;
+          }
+        }
+        
+        const realDays = theoricalDays - selectedAbsenceDates.length;
         return {
-          totalDays: workingDaysPerMonth,
+          totalDays: theoricalDays,
           realDays: realDays,
           absenceDays: selectedAbsenceDates.length
         };
       } else {
+        // Calculer les heures basées sur les heures hebdomadaires
         const daysInMonth = getDaysInMonth(calcYear, calcMonth);
         let totalHours = 0;
         let absenceHours = 0;
+        const dailyHours = weeklyHours / weeklyWorkingDays.length;
 
         for (let day = 1; day <= daysInMonth; day++) {
+          const date = new Date(calcYear, calcMonth, day);
+          const dayOfWeek = date.getDay();
           const dateKey = formatDateKey(calcYear, calcMonth, day);
-          const hours = dailyHoursSchedule[dateKey] || 0;
-          totalHours += hours;
           
-          if (selectedAbsenceDates.includes(dateKey)) {
-            absenceHours += hours;
+          if (weeklyWorkingDays.includes(dayOfWeek) && !joursFeries2025[dateKey]) {
+            const hours = dailyHoursSchedule[dateKey] || dailyHours;
+            totalHours += hours;
+            
+            if (selectedAbsenceDates.includes(dateKey)) {
+              absenceHours += hours;
+            }
           }
         }
 
         return {
-          totalHours: totalHours,
-          realHours: totalHours - absenceHours,
-          absenceHours: absenceHours
+          totalHours: Math.round(totalHours * 10) / 10,
+          realHours: Math.round((totalHours - absenceHours) * 10) / 10,
+          absenceHours: Math.round(absenceHours * 10) / 10
         };
       }
     };
@@ -764,45 +790,119 @@ const CalendrierPaie = () => {
               </button>
             </div>
 
-            {/* Sélection du mois */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">Mois</label>
-                <select 
-                  value={calcMonth}
-                  onChange={(e) => setCalcMonth(parseInt(e.target.value))}
-                  className="w-full p-2 border rounded-md"
-                >
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <option key={i} value={i}>
-                      {new Date(2025, i, 1).toLocaleDateString('fr-FR', { month: 'long' })}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Année</label>
-                <input
-                  type="number"
-                  value={calcYear}
-                  onChange={(e) => setCalcYear(parseInt(e.target.value))}
-                  className="w-full p-2 border rounded-md"
-                />
-              </div>
+            {/* Bouton pour options avancées */}
+            <div className="text-center">
+              <button
+                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                className="text-sm text-gray-500 hover:text-gray-700 underline"
+              >
+                {showAdvancedOptions ? 'Masquer' : 'Changer de mois/année'}
+              </button>
             </div>
+
+            {/* Options avancées (cachées par défaut) */}
+            {showAdvancedOptions && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Mois</label>
+                  <select 
+                    value={calcMonth}
+                    onChange={(e) => setCalcMonth(parseInt(e.target.value))}
+                    className="w-full p-2 border rounded-md"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <option key={i} value={i}>
+                        {new Date(2025, i, 1).toLocaleDateString('fr-FR', { month: 'long' })}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Année</label>
+                  <input
+                    type="number"
+                    value={calcYear}
+                    onChange={(e) => setCalcYear(parseInt(e.target.value))}
+                    className="w-full p-2 border rounded-md"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Configuration spécifique au mode */}
             {calculatorMode === 'days' && (
-              <div>
-                <label className="text-sm font-medium">Nombre de jours travaillés dans le mois</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="31"
-                  value={workingDaysPerMonth}
-                  onChange={(e) => setWorkingDaysPerMonth(parseInt(e.target.value) || 0)}
-                  className="w-full p-2 border rounded-md mt-1"
-                />
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Jours travaillés habituels du salarié</label>
+                  <div className="grid grid-cols-7 gap-2">
+                    {DAYS_OF_WEEK.map((day) => (
+                      <div
+                        key={day.value}
+                        className={cn(
+                          "p-2 text-center rounded border cursor-pointer transition-colors text-sm",
+                          weeklyWorkingDays.includes(day.value)
+                            ? "bg-blue-100 border-blue-300 text-blue-700"
+                            : "bg-gray-50 border-gray-200"
+                        )}
+                        onClick={() => {
+                          if (weeklyWorkingDays.includes(day.value)) {
+                            setWeeklyWorkingDays(weeklyWorkingDays.filter(d => d !== day.value));
+                          } else {
+                            setWeeklyWorkingDays([...weeklyWorkingDays, day.value]);
+                          }
+                        }}
+                      >
+                        {day.label.slice(0, 3)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {calculatorMode === 'hours' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Jours travaillés habituels du salarié</label>
+                  <div className="grid grid-cols-7 gap-2">
+                    {DAYS_OF_WEEK.map((day) => (
+                      <div
+                        key={day.value}
+                        className={cn(
+                          "p-2 text-center rounded border cursor-pointer transition-colors text-sm",
+                          weeklyWorkingDays.includes(day.value)
+                            ? "bg-blue-100 border-blue-300 text-blue-700"
+                            : "bg-gray-50 border-gray-200"
+                        )}
+                        onClick={() => {
+                          if (weeklyWorkingDays.includes(day.value)) {
+                            setWeeklyWorkingDays(weeklyWorkingDays.filter(d => d !== day.value));
+                          } else {
+                            setWeeklyWorkingDays([...weeklyWorkingDays, day.value]);
+                          }
+                        }}
+                      >
+                        {day.label.slice(0, 3)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Nombre d'heures par semaine</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="70"
+                    step="0.5"
+                    value={weeklyHours}
+                    onChange={(e) => setWeeklyHours(parseFloat(e.target.value) || 0)}
+                    className="w-full p-2 border rounded-md mt-1"
+                    placeholder="35"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Heures par jour : {weeklyWorkingDays.length > 0 ? (weeklyHours / weeklyWorkingDays.length).toFixed(1) : 0}h
+                  </p>
+                </div>
               </div>
             )}
 
