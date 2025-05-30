@@ -759,7 +759,6 @@ const CalendrierPaie = () => {
                   onChange={(e) => setDailyHours(dateKey, parseFloat(e.target.value) || 0)}
                   onClick={(e) => e.stopPropagation()}
                   className="w-full mt-1 text-xs text-center border rounded"
-                  placeholder={`${defaultHours}h`}
                 />
               )}
               {!isWorkingDay && (
@@ -922,7 +921,6 @@ const CalendrierPaie = () => {
                               value={dailyHoursSchedule[`default-${day.value}`] || ''}
                               onChange={(e) => setDailyHours(`default-${day.value}`, parseFloat(e.target.value) || 0)}
                               className="w-20 p-1 text-sm border rounded"
-                              placeholder="7h"
                             />
                           )}
                           {hoursWorkingDays.includes(day.value) && (
