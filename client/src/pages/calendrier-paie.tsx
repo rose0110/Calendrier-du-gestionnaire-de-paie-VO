@@ -472,12 +472,12 @@ const CalendrierPaie = () => {
         <CardContent className="p-6">
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-lg border border-gray-100">
-              <div className="space-y-3">
-                <div>
+              <div className="flex justify-between items-center">
+                <div className="text-center">
                   <div className="text-sm font-medium text-gray-600 font-figtree">Jours ouvrés</div>
                   <div className="text-2xl font-bold text-[#42D80F] font-figtree">{workDays}</div>
                 </div>
-                <div>
+                <div className="text-center">
                   <div className="text-sm font-medium text-gray-600 font-figtree">Jours ouvrables</div>
                   <div className="text-2xl font-bold text-[#42D80F] font-figtree">{workableDays}</div>
                 </div>
