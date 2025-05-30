@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Plus, X, MousePointerClick, Settings } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Plus, X, MousePointerClick, Settings, Calculator } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -147,6 +147,7 @@ const CalendrierPaie = () => {
   const [showCustomDaysDialog, setShowCustomDaysDialog] = useState(false);
   const [customRestDays, setCustomRestDays] = useState<number[]>([6, 0]); // Samedi et Dimanche par défaut
   const [customNonWorkingDay, setCustomNonWorkingDay] = useState<number | null>(0); // Dimanche par défaut
+  const [showRealDaysCalculator, setShowRealDaysCalculator] = useState(false);
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -593,6 +594,222 @@ const CalendrierPaie = () => {
   };
 
 
+  const renderRealDaysCalculator = () => {
+    const [selectedMonth, setSelectedMonth] = useState(selectedDate.getMonth());
+    const [selectedYear, setSelectedYear] = useState(selectedDate.getFullYear());
+    const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]); // Lun-Ven par défaut
+    const [dailyHours, setDailyHours] = useState(7); // 7h par jour par défaut
+    const [absenceDates, setAbsenceDates] = useState<string[]>([]);
+    const [newAbsenceDate, setNewAbsenceDate] = useState('');
+    
+    const calculateRealDays = () => {
+      const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+      let realWorkingDays = 0;
+      let totalTheoricalHours = 0;
+      let absenceHours = 0;
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(selectedYear, selectedMonth, day);
+        const dayOfWeek = date.getDay();
+        const dateString = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        // Vérifier si c'est un jour travaillé
+        if (workingDays.includes(dayOfWeek) && !joursFeries2025[dateString]) {
+          realWorkingDays++;
+          totalTheoricalHours += dailyHours;
+          
+          // Vérifier si c'est un jour d'absence
+          if (!absenceDates.includes(dateString)) {
+            // C'est un jour effectivement travaillé
+          } else {
+            absenceHours += dailyHours;
+            realWorkingDays--; // Retirer le jour d'absence
+          }
+        }
+      }
+      
+      const effectiveHours = totalTheoricalHours - absenceHours;
+      
+      return {
+        theoricalDays: realWorkingDays + absenceDates.filter(date => {
+          const d = new Date(date);
+          return workingDays.includes(d.getDay()) && !joursFeries2025[date];
+        }).length,
+        realWorkingDays,
+        totalTheoricalHours,
+        absenceHours,
+        effectiveHours,
+        absenceDays: absenceDates.length
+      };
+    };
+    
+    const results = calculateRealDays();
+    
+    const addAbsenceDate = () => {
+      if (newAbsenceDate && !absenceDates.includes(newAbsenceDate)) {
+        setAbsenceDates([...absenceDates, newAbsenceDate]);
+        setNewAbsenceDate('');
+      }
+    };
+    
+    const removeAbsenceDate = (dateToRemove: string) => {
+      setAbsenceDates(absenceDates.filter(date => date !== dateToRemove));
+    };
+
+    return (
+      <Dialog open={showRealDaysCalculator} onOpenChange={setShowRealDaysCalculator}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Calcul des jours et heures réels</DialogTitle>
+            <DialogDescription>
+              Calculez les jours et heures réellement travaillés en tenant compte des jours de repos et absences
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Sélection du mois */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Mois</label>
+                <select 
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  className="w-full p-2 border rounded-md"
+                >
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <option key={i} value={i}>
+                      {new Date(2025, i, 1).toLocaleDateString('fr-FR', { month: 'long' })}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Année</label>
+                <input
+                  type="number"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="w-full p-2 border rounded-md"
+                />
+              </div>
+            </div>
+
+            {/* Jours de travail */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Jours de travail habituels</label>
+              <div className="grid grid-cols-7 gap-2">
+                {DAYS_OF_WEEK.map((day) => (
+                  <div
+                    key={day.value}
+                    className={cn(
+                      "p-2 text-center rounded border cursor-pointer transition-colors text-sm",
+                      workingDays.includes(day.value)
+                        ? "bg-blue-100 border-blue-300 text-blue-700"
+                        : "bg-gray-50 border-gray-200"
+                    )}
+                    onClick={() => {
+                      if (workingDays.includes(day.value)) {
+                        setWorkingDays(workingDays.filter(d => d !== day.value));
+                      } else {
+                        setWorkingDays([...workingDays, day.value]);
+                      }
+                    }}
+                  >
+                    {day.label.slice(0, 3)}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Heures par jour */}
+            <div>
+              <label className="text-sm font-medium">Heures de travail par jour</label>
+              <input
+                type="number"
+                step="0.5"
+                min="0"
+                max="24"
+                value={dailyHours}
+                onChange={(e) => setDailyHours(parseFloat(e.target.value))}
+                className="w-full p-2 border rounded-md mt-1"
+              />
+            </div>
+
+            {/* Ajout d'absences */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Jours d'absence</label>
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="date"
+                  value={newAbsenceDate}
+                  onChange={(e) => setNewAbsenceDate(e.target.value)}
+                  className="flex-1 p-2 border rounded-md"
+                />
+                <Button onClick={addAbsenceDate} size="sm">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="space-y-1">
+                {absenceDates.map((date) => (
+                  <div key={date} className="flex items-center justify-between bg-red-50 p-2 rounded">
+                    <span className="text-sm">
+                      {new Date(date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeAbsenceDate(date)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Résultats */}
+            <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+              <h3 className="font-medium text-gray-900">Résultats</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div className="text-gray-600">Jours théoriques</div>
+                  <div className="font-medium text-lg">{results.theoricalDays}</div>
+                </div>
+                <div>
+                  <div className="text-gray-600">Jours réels travaillés</div>
+                  <div className="font-medium text-lg text-green-600">{results.realWorkingDays}</div>
+                </div>
+                <div>
+                  <div className="text-gray-600">Heures théoriques</div>
+                  <div className="font-medium text-lg">{results.totalTheoricalHours}h</div>
+                </div>
+                <div>
+                  <div className="text-gray-600">Heures effectives</div>
+                  <div className="font-medium text-lg text-green-600">{results.effectiveHours}h</div>
+                </div>
+                <div>
+                  <div className="text-gray-600">Jours d'absence</div>
+                  <div className="font-medium text-lg text-red-600">{results.absenceDays}</div>
+                </div>
+                <div>
+                  <div className="text-gray-600">Heures d'absence</div>
+                  <div className="font-medium text-lg text-red-600">{results.absenceHours}h</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowRealDaysCalculator(false)}>
+                Fermer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
     const renderDelayForm = () => (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmitDelay)} className="space-y-4">
@@ -915,7 +1132,15 @@ const CalendrierPaie = () => {
           {viewMode === 'month' && (
             <>
               <button
-                className="flex items-center gap-2 text-gray-600 hover:bg-[#42D80F]/10 p-2 rounded-lg transition-colors ml-auto mr-4"
+                className="flex items-center gap-2 text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors mr-4"
+                onClick={() => setShowRealDaysCalculator(true)}
+              >
+                <Calculator className="h-5 w-5" />
+                Calcul jours/heures réels
+              </button>
+
+              <button
+                className="flex items-center gap-2 text-gray-600 hover:bg-[#42D80F]/10 p-2 rounded-lg transition-colors mr-4"
                 onClick={() => setViewMode('year')}
               >
                 <Calendar className="h-5 w-5" />
@@ -963,6 +1188,9 @@ const CalendrierPaie = () => {
         <AnimatePresence mode="wait">
           {viewMode === 'year' ? renderAnnualView() : renderMonthView()}
         </AnimatePresence>
+
+        {/* Dialogues */}
+        {renderRealDaysCalculator()}
       </div>
     </>
   );
