@@ -484,33 +484,39 @@ const CalendrierPaie = () => {
     return (
       <Card className="border-[#42D80F]/10">
         <CardContent className="p-6">
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-lg border border-gray-100">
-              <div className="flex justify-between items-center">
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-600 font-figtree">Jours ouvrés</div>
-                  <div className="text-2xl font-bold text-[#42D80F] font-figtree">{workDays}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-600 font-figtree">Jours ouvrables</div>
-                  <div className="text-2xl font-bold text-[#42D80F] font-figtree">{workableDays}</div>
-                </div>
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-gradient-to-br from-gray-50 to-white p-3 rounded-lg border border-gray-100">
+              <div className="text-center">
+                <div className="text-xs font-medium text-gray-600 font-figtree">Jours ouvrés / ouvrables</div>
+                <div className="text-lg font-bold text-[#42D80F] font-figtree">{workDays} / {workableDays}</div>
               </div>
             </div>
             <div 
-              className="bg-gradient-to-br from-blue-50 to-white p-4 rounded-lg border border-blue-100 cursor-pointer hover:shadow-md transition-shadow"
+              className="bg-gradient-to-br from-blue-50 to-white p-3 rounded-lg border border-blue-100 cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => {
                 setCalcMonth(selectedDate.getMonth());
                 setCalcYear(selectedDate.getFullYear());
+                setCalculatorMode('days');
                 setShowRealDaysCalculator(true);
               }}
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium text-blue-600 font-figtree">Calcul jours/heures réels</div>
-                  <div className="text-xs text-blue-500 mt-1">Cliquez pour calculer</div>
-                </div>
-                <Calculator className="h-6 w-6 text-blue-500" />
+              <div className="text-center">
+                <div className="text-xs font-medium text-blue-600 font-figtree">Calcul jours payés</div>
+                <div className="text-xs text-blue-500 mt-1">Cliquez ici</div>
+              </div>
+            </div>
+            <div 
+              className="bg-gradient-to-br from-green-50 to-white p-3 rounded-lg border border-green-100 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => {
+                setCalcMonth(selectedDate.getMonth());
+                setCalcYear(selectedDate.getFullYear());
+                setCalculatorMode('hours');
+                setShowRealDaysCalculator(true);
+              }}
+            >
+              <div className="text-center">
+                <div className="text-xs font-medium text-green-600 font-figtree">Calcul heures réelles</div>
+                <div className="text-xs text-green-500 mt-1">Cliquez ici</div>
               </div>
             </div>
           </div>
