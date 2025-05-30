@@ -170,6 +170,14 @@ const CalendrierPaie = () => {
     }
   }, [calculatedDate]);
 
+  // Ouvrir automatiquement le dialogue de paramètres quand on sélectionne ouvré ou ouvrable
+  useEffect(() => {
+    const watchedType = form.watch("type");
+    if (watchedType === 'ouvré' || watchedType === 'ouvrable') {
+      setShowCustomDaysDialog(true);
+    }
+  }, [form.watch("type")]);
+
 
 
 
@@ -305,14 +313,18 @@ const CalendrierPaie = () => {
   const onSubmitDelay = (values: z.infer<typeof formSchema>) => {
     if (!currentDate) return;
 
+    // Récupérer les jours de repos personnalisés
+    const finalRestDays = values.type === 'ouvré' && customRestDays.length > 0 ? customRestDays : [6, 0];
+    const finalNonWorkingDay = values.type === 'ouvrable' && customNonWorkingDay !== null ? customNonWorkingDay : 0;
+
     const result = calculateFutureDate(
       currentDate,
       values.days,
       values.type,
       values.delayType,
-      values.carenceDays,
-      values.type === 'ouvré' ? customRestDays : [6, 0],
-      values.type === 'ouvrable' ? customNonWorkingDay || 0 : 0
+      values.carenceDays || 0,
+      finalRestDays,
+      finalNonWorkingDay
     );
 
     setCalculatedDate({
@@ -323,8 +335,10 @@ const CalendrierPaie = () => {
       delayType: values.delayType,
       carenceDays: values.carenceDays || 0,
       customRestDays: values.type === 'ouvré' ? customRestDays : undefined,
-      nonWorkingDay: values.type === 'ouvrable' ? customNonWorkingDay : undefined
+      nonWorkingDay: values.type === 'ouvrable' ? (customNonWorkingDay ?? undefined) : undefined
     });
+
+    setIsDelayDialogOpen(false);
   };
 
   const renderAnnualView = () => {
@@ -813,47 +827,45 @@ const CalendrierPaie = () => {
           )}
         />
 
-        {form.watch("type") === "calendaire" && (
-          <FormField
-            control={form.control}
-            name="delayType"
-            render={({ field }) => (
-              <FormItem className="space-y-3">
-                <FormLabel>Type de calcul</FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    className="flex flex-col space-y-1"
-                  >
-                    <FormItem className="flex items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="retractation" />
-                      </FormControl>
-                      <FormLabel className="font-normal">
-                        Délai de rétractation
-                      </FormLabel>
-                    </FormItem>
-                    <FormItem className="flex items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="subrogation" />
-                      </FormControl>
-                      <FormLabel className="font-normal">
-                        Date de fin de subrogation
-                      </FormLabel>
-                    </FormItem>
-                  </RadioGroup>
-                </FormControl>
-                <FormDescription>
-                  {field.value === "retractation"
-                    ? "La date d'échéance sera automatiquement reportée au prochain jour ouvré si elle tombe un weekend ou un jour férié."
-                    : "Calcul de la date de fin de subrogation à partir de la date de début d'arrêt."}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
+        <FormField
+          control={form.control}
+          name="delayType"
+          render={({ field }) => (
+            <FormItem className="space-y-3">
+              <FormLabel>Type de calcul</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  className="flex flex-col space-y-1"
+                >
+                  <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="retractation" />
+                    </FormControl>
+                    <FormLabel className="font-normal">
+                      Délai de rétractation
+                    </FormLabel>
+                  </FormItem>
+                  <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="subrogation" />
+                    </FormControl>
+                    <FormLabel className="font-normal">
+                      Date de fin de subrogation (maintien de salaire)
+                    </FormLabel>
+                  </FormItem>
+                </RadioGroup>
+              </FormControl>
+              <FormDescription>
+                {field.value === "retractation"
+                  ? "La date d'échéance sera automatiquement reportée au prochain jour ouvré si elle tombe un weekend ou un jour férié."
+                  : "Calcul de la date de fin de subrogation à partir de la date de début d'arrêt."}
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {form.watch("delayType") === "subrogation" && (
           <FormField
