@@ -180,7 +180,7 @@ const DAYS_OF_WEEK: DayOfWeek[] = [
 const CalendrierPaie = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [viewMode, setViewMode] = useState('year');
+  const [viewMode, setViewMode] = useState('month');
   const calculatedDayRef = useRef<HTMLDivElement>(null);
   const [showHelpAlert, setShowHelpAlert] = useState(true);
   const [calculatedDate, setCalculatedDate] = useState<{
