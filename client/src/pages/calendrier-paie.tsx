@@ -878,43 +878,43 @@ const CalendrierPaie = () => {
 
     return (
       <Dialog open={showRealDaysCalculator} onOpenChange={setShowRealDaysCalculator}>
-        <DialogContent className="max-w-7xl w-[95vw] h-[95vh] flex flex-col">
-          <DialogHeader className="flex-shrink-0">
+        <DialogContent className="max-w-6xl w-[95vw] h-[90vh] p-0 flex flex-col">
+          <DialogHeader className="p-6 pb-4">
             <DialogTitle>Calcul des jours et heures réels</DialogTitle>
             <DialogDescription>
-              Choisissez le type de calcul et configurez les paramètres
+              Configurez les paramètres de calcul
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-            {/* Sélection du mode */}
-            <div className="flex gap-4">
+          <div className="flex-1 overflow-y-auto p-6 pt-0">
+            {/* Mode de calcul */}
+            <div className="flex gap-2 mb-4">
               <button
                 onClick={() => setCalculatorMode('days')}
                 className={cn(
-                  "px-4 py-2 rounded-lg border transition-colors",
+                  "px-3 py-2 text-sm rounded border",
                   calculatorMode === 'days' 
                     ? "bg-blue-100 border-blue-300 text-blue-700" 
                     : "bg-gray-50 border-gray-200"
                 )}
               >
-                Calcul des jours réels
+                Jours réels
               </button>
               <button
                 onClick={() => setCalculatorMode('hours')}
                 className={cn(
-                  "px-4 py-2 rounded-lg border transition-colors",
+                  "px-3 py-2 text-sm rounded border",
                   calculatorMode === 'hours' 
                     ? "bg-blue-100 border-blue-300 text-blue-700" 
                     : "bg-gray-50 border-gray-200"
                 )}
               >
-                Calcul des heures réelles
+                Heures réelles
               </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Configuration principale à gauche */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Configuration */}
               <div className="space-y-3">
 
             {/* Bouton pour options avancées */}
@@ -1099,7 +1099,6 @@ const CalendrierPaie = () => {
                   <div className="text-sm text-gray-500">Aucun jour férié ce mois-ci</div>
                 )}
               </div>
-            </div>
 
               {/* Calendrier pour les absences - colonne centrale */}
               <div>
@@ -1185,26 +1184,26 @@ const CalendrierPaie = () => {
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Actions en bas du modal */}
-          <div className="flex-shrink-0 flex justify-end gap-2 pt-4 border-t">
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setSelectedAbsenceDates([]);
-                setDailyHoursSchedule({});
-                setHolidayStatus({});
-                setHolidayHours({});
-                setDaysWorkingDays([1, 2, 3, 4, 5]);
-                setHoursWorkingDays([1, 2, 3, 4, 5]);
-              }}
-            >
-              Réinitialiser
-            </Button>
-            <Button variant="outline" onClick={() => setShowRealDaysCalculator(false)}>
-              Fermer
-            </Button>
+            {/* Actions en bas */}
+            <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSelectedAbsenceDates([]);
+                  setDailyHoursSchedule({});
+                  setHolidayStatus({});
+                  setHolidayHours({});
+                  setDaysWorkingDays([1, 2, 3, 4, 5]);
+                  setHoursWorkingDays([1, 2, 3, 4, 5]);
+                }}
+              >
+                Réinitialiser
+              </Button>
+              <Button variant="outline" onClick={() => setShowRealDaysCalculator(false)}>
+                Fermer
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
