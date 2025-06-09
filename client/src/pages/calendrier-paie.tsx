@@ -878,53 +878,54 @@ const CalendrierPaie = () => {
 
     return (
       <Dialog open={showRealDaysCalculator} onOpenChange={setShowRealDaysCalculator}>
-        <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-hidden">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Calcul des jours et heures réels</DialogTitle>
             <DialogDescription>
-              Optimisé pour écrans multiples - plus de double scroll
+              Choisissez le type de calcul et configurez les paramètres
             </DialogDescription>
           </DialogHeader>
 
-          <div className="max-h-[80vh] overflow-y-auto">
-            {/* Mode de calcul */}
-            <div className="flex gap-2 mb-4">
+          <div className="space-y-6">
+            {/* Sélection du mode */}
+            <div className="flex gap-4">
               <button
                 onClick={() => setCalculatorMode('days')}
                 className={cn(
-                  "px-3 py-2 text-sm rounded border",
+                  "px-4 py-2 rounded-lg border transition-colors",
                   calculatorMode === 'days' 
                     ? "bg-blue-100 border-blue-300 text-blue-700" 
                     : "bg-gray-50 border-gray-200"
                 )}
               >
-                Jours réels
+                Calcul des jours réels
               </button>
               <button
                 onClick={() => setCalculatorMode('hours')}
                 className={cn(
-                  "px-3 py-2 text-sm rounded border",
+                  "px-4 py-2 rounded-lg border transition-colors",
                   calculatorMode === 'hours' 
                     ? "bg-blue-100 border-blue-300 text-blue-700" 
                     : "bg-gray-50 border-gray-200"
                 )}
               >
-                Heures réelles
+                Calcul des heures réelles
               </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Configuration compacte */}
-              <div className="space-y-2">
-                {/* Bouton pour options avancées */}
-                <div className="text-center">
-                  <button
-                    onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-                    className="text-sm text-gray-500 hover:text-gray-700 underline"
-                  >
-                    {showAdvancedOptions ? 'Masquer' : 'Changer de mois/année'}
-                  </button>
-                </div>
+            <div className="grid grid-cols-2 gap-6">
+              {/* Configuration principale à gauche */}
+              <div className="space-y-4">
+
+            {/* Bouton pour options avancées */}
+            <div className="text-center">
+              <button
+                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                className="text-sm text-gray-500 hover:text-gray-700 underline"
+              >
+                {showAdvancedOptions ? 'Masquer' : 'Changer de mois/année'}
+              </button>
+            </div>
 
             {/* Options avancées (cachées par défaut) */}
             {showAdvancedOptions && (
@@ -1039,7 +1040,7 @@ const CalendrierPaie = () => {
               </div>
 
               {/* Gestion des jours fériés à droite */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <h3 className="text-sm font-medium">Jours fériés du mois</h3>
                 {getHolidaysInMonth().length > 0 ? (
                   <div className="space-y-3">
@@ -1098,85 +1099,97 @@ const CalendrierPaie = () => {
                   <div className="text-sm text-gray-500">Aucun jour férié ce mois-ci</div>
                 )}
               </div>
-
-              {/* Calendrier pour les absences - colonne centrale */}
-              <div>
-                <h3 className="text-sm font-medium mb-2">
-                  {calculatorMode === 'days' 
-                    ? "Jours d'absence" 
-                    : "Heures et absences"}
-                </h3>
-                <div className="max-h-72 overflow-y-auto">
-                  {renderCalendarGrid()}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Absences sélectionnées : {selectedAbsenceDates.length}
-                </p>
-              </div>
             </div>
 
-            {/* Résultats compacts */}
-            <div className="bg-gray-50 p-3 rounded-lg mt-4">
-              <h3 className="font-medium text-gray-900 mb-2 text-sm">Résultats</h3>
+            {/* Calendrier pour les absences */}
+            <div>
+              <h3 className="text-sm font-medium mb-2">
+                {calculatorMode === 'days' 
+                  ? "Sélectionnez les jours d'absence (clic sur les dates)" 
+                  : "Saisissez les heures par jour et marquez les absences (clic sur les dates)"}
+              </h3>
+              {renderCalendarGrid()}
+              <p className="text-xs text-gray-500 mt-2">
+                Dates d'absence sélectionnées : {selectedAbsenceDates.length}
+              </p>
+            </div>
+
+            {/* Résultats */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-medium text-gray-900 mb-3">Résultats</h3>
               {calculatorMode === 'days' ? (
-                <div className="grid grid-cols-2 gap-2 text-center">
-                  <div className="bg-white p-2 rounded">
-                    <div className="text-gray-600 text-xs">Jours travaillés</div>
-                    <div className="text-lg font-bold text-green-600">{results.realDays}</div>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-gray-600 text-sm">Jours théoriques</div>
+                    <div className="text-2xl font-bold text-blue-600">{results.totalDays}</div>
                   </div>
-                  <div className="bg-white p-2 rounded">
-                    <div className="text-gray-600 text-xs">Jours payés</div>
-                    <div className="text-lg font-bold text-blue-500">{results.totalPaidDays}</div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Jours travaillés</div>
+                    <div className="text-2xl font-bold text-green-600">{results.realDays}</div>
                   </div>
-                  <div className="bg-white p-2 rounded">
-                    <div className="text-gray-600 text-xs">Fériés travaillés</div>
-                    <div className="text-lg font-bold text-yellow-600">{results.holidayWorkedDays}</div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Jours payés</div>
+                    <div className="text-2xl font-bold text-blue-500">{results.totalPaidDays}</div>
                   </div>
-                  <div className="bg-white p-2 rounded">
-                    <div className="text-gray-600 text-xs">Absences</div>
-                    <div className="text-lg font-bold text-red-600">{results.absenceDays}</div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Fériés travaillés</div>
+                    <div className="text-2xl font-bold text-yellow-600">{results.holidayWorkedDays}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Fériés payés</div>
+                    <div className="text-2xl font-bold text-blue-400">{results.holidayPaidDays}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Jours d'absence</div>
+                    <div className="text-2xl font-bold text-red-600">{results.absenceDays}</div>
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2 text-center">
-                  <div className="bg-white p-2 rounded">
-                    <div className="text-gray-600 text-xs">Total travaillées</div>
-                    <div className="text-lg font-bold text-green-600">{results.totalWorkedHours}h</div>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-gray-600 text-sm">Heures théoriques</div>
+                    <div className="text-2xl font-bold text-blue-600">{results.totalHours}h</div>
                   </div>
-                  <div className="bg-white p-2 rounded">
-                    <div className="text-gray-600 text-xs">Heures fériés</div>
-                    <div className="text-lg font-bold text-yellow-600">{results.holidayWorkedHours}h</div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Total travaillées</div>
+                    <div className="text-2xl font-bold text-green-600">{results.totalWorkedHours}h</div>
                   </div>
-                  <div className="bg-white p-2 rounded">
-                    <div className="text-gray-600 text-xs">Heures normales</div>
-                    <div className="text-lg font-bold text-green-500">{results.realHours}h</div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Heures fériés</div>
+                    <div className="text-2xl font-bold text-yellow-600">{results.holidayWorkedHours}h</div>
                   </div>
-                  <div className="bg-white p-2 rounded">
-                    <div className="text-gray-600 text-xs">Absences</div>
-                    <div className="text-lg font-bold text-red-600">{results.absenceHours}h</div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Heures normales</div>
+                    <div className="text-2xl font-bold text-green-500">{results.realHours}h</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-600 text-sm">Heures d'absence</div>
+                    <div className="text-2xl font-bold text-red-600">{results.absenceHours}h</div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Liste compacte des absences */}
+            {/* Liste des absences avec possibilité de suppression */}
             {selectedAbsenceDates.length > 0 && (
-              <div className="bg-red-50 p-2 rounded-lg mt-2">
-                <h4 className="text-xs font-medium text-red-800 mb-1">Absences ({selectedAbsenceDates.length}) :</h4>
-                <div className="max-h-20 overflow-y-auto space-y-1">
+              <div className="bg-red-50 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-red-800 mb-2">Absences sélectionnées :</h4>
+                <div className="space-y-1">
                   {selectedAbsenceDates.map((dateKey) => {
                     const date = new Date(dateKey);
                     return (
-                      <div key={dateKey} className="flex items-center justify-between bg-white p-1 rounded text-xs">
-                        <span>
-                          {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                      <div key={dateKey} className="flex items-center justify-between bg-white p-2 rounded">
+                        <span className="text-sm">
+                          {date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
                         </span>
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => setSelectedAbsenceDates(selectedAbsenceDates.filter(d => d !== dateKey))}
-                          className="text-red-600 hover:text-red-700 p-1"
+                          className="text-red-600 hover:text-red-700"
                         >
-                          <X className="h-3 w-3" />
-                        </button>
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
                     );
                   })}
@@ -1184,10 +1197,8 @@ const CalendrierPaie = () => {
               </div>
             )}
 
-            </div>
-
             {/* Actions */}
-            <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+            <div className="flex justify-end gap-2">
               <Button 
                 variant="outline" 
                 onClick={() => {
@@ -1195,6 +1206,7 @@ const CalendrierPaie = () => {
                   setDailyHoursSchedule({});
                   setHolidayStatus({});
                   setHolidayHours({});
+                  // Réinitialiser les deux modes séparément
                   setDaysWorkingDays([1, 2, 3, 4, 5]);
                   setHoursWorkingDays([1, 2, 3, 4, 5]);
                 }}
