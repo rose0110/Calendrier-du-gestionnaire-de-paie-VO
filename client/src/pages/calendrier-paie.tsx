@@ -878,15 +878,15 @@ const CalendrierPaie = () => {
 
     return (
       <Dialog open={showRealDaysCalculator} onOpenChange={setShowRealDaysCalculator}>
-        <DialogContent className="max-w-6xl w-[95vw] h-[90vh] p-0 flex flex-col">
-          <DialogHeader className="p-6 pb-4">
+        <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-hidden">
+          <DialogHeader>
             <DialogTitle>Calcul des jours et heures réels</DialogTitle>
             <DialogDescription>
-              Configurez les paramètres de calcul
+              Optimisé pour écrans multiples - plus de double scroll
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6 pt-0">
+          <div className="max-h-[80vh] overflow-y-auto">
             {/* Mode de calcul */}
             <div className="flex gap-2 mb-4">
               <button
@@ -913,19 +913,18 @@ const CalendrierPaie = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Configuration */}
-              <div className="space-y-3">
-
-            {/* Bouton pour options avancées */}
-            <div className="text-center">
-              <button
-                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-                className="text-sm text-gray-500 hover:text-gray-700 underline"
-              >
-                {showAdvancedOptions ? 'Masquer' : 'Changer de mois/année'}
-              </button>
-            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Configuration compacte */}
+              <div className="space-y-2">
+                {/* Bouton pour options avancées */}
+                <div className="text-center">
+                  <button
+                    onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                    className="text-sm text-gray-500 hover:text-gray-700 underline"
+                  >
+                    {showAdvancedOptions ? 'Masquer' : 'Changer de mois/année'}
+                  </button>
+                </div>
 
             {/* Options avancées (cachées par défaut) */}
             {showAdvancedOptions && (
@@ -1185,7 +1184,9 @@ const CalendrierPaie = () => {
               </div>
             )}
 
-            {/* Actions en bas */}
+            </div>
+
+            {/* Actions */}
             <div className="flex justify-end gap-2 pt-4 border-t mt-4">
               <Button 
                 variant="outline" 
